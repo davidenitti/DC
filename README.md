@@ -18,3 +18,19 @@ Execute
 ```
 sh make.sh
 ```
+## Test
+Execute
+```
+sh make.sh
+```
+or equivalently
+```
+yap -L examples/example1.pl
+```
+### Expected output (the error values may differ):
+Testing example1.pl...
+Absolute error drawn(1) ~= 1: 4.91269841260689e-05
+Absolute error drawn(1) ~= 2: 0.000294206349202047
+Absolute error drawn(1) ~= 3: 0.00178948412698662
+Absolute error average g ~ Gaussian(0,0.1): 0.000900261603206224
+% 0.290 CPU in 0.291 seconds ( 99% CPU)
