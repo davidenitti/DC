@@ -1,7 +1,10 @@
 # Distributional Clauses
-A probabilistic logic language for hybrid relational domains  
+Probabilistic logic language for inference, planning and learning in static and dynamic domains  
 DC: Distributional Clauses for static models  
-DCPF: Distributional Clauses Particle Filter for filtering in dynamic models
+DCPF: Distributional Clauses Particle Filter for filtering in dynamic models  
+HYPE: planner for hybrid MDPs based on DCPF (code not yet available)  
+HybRel: planner for hybrid relational MDPs based on DCPF (code not yet available)   
+
 ## Prerequisites
 Install Yap prolog (tested on YAP 6.2.3 and [YAP 6.3.3](http://www.dcc.fc.up.pt/~vsc/Yap/yap-6.3.3.tar.gz)), follow [these instructions](http://www.dcc.fc.up.pt/~vsc/Yap/documentation.html#Install) and use these options for configure:
 ```
