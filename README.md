@@ -1,6 +1,6 @@
 # Distributional Clauses
 Probabilistic logic language for inference, planning and learning in static and dynamic domains  
-DC: Distributional Clauses for static models  
+DC: Distributional Clauses for inference in static models  
 DCPF: Distributional Clauses Particle Filter for filtering in dynamic models  
 HYPE: planner for hybrid MDPs based on DCPF (code not yet available)  
 HybRel: planner for hybrid relational MDPs based on DCPF (code not yet available)   
