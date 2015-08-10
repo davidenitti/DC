@@ -22,7 +22,7 @@ sh make.sh
 ## Test
 Execute
 ```
-sh make.sh
+sh test.sh
 ```
 or equivalently
 ```
