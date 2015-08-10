@@ -13,7 +13,7 @@
 SHELL=/bin/sh
 USRLIBDIR=-Llibunix
 #LIBS = -lobj -lcudd -lmtr -lst -lutil -lepd
-CFLAGS= -std=c++0x -shared -fPIC -ffast-math -Wall -Os -march=native
+CFLAGS= -std=c++0x -shared -fPIC -ffast-math -Wall -Os -march=native  -I./
 DEBUGOPTIONS=-g -O0 
 
 #OBJDIR=svm-Dlight
