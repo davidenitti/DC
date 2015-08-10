@@ -11,11 +11,14 @@ Install Yap prolog (tested on YAP 6.2.3 and [YAP 6.3.3](http://www.dcc.fc.up.pt/
 ../configure --enable-tabling=yes --enable-dynamic-loading
 ```
 
-Install GSL library e.g. for Ubuntu:
+Install GSL library, e.g., for Ubuntu:
 ```
 sudo apt-get install libgsl0-dev libgsl0ldbl
 ```
-Install boost library
+Install boost library, e.g., for Ubuntu:
+```
+sudo apt-get install libboost-all-dev
+```
 
 ## Compilation
 Execute
