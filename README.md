@@ -1,5 +1,5 @@
 # Distributional Clauses
-A probabilistic logic language for hybrid relational domains
+A probabilistic logic language for hybrid relational domains  
 DC: Distributional Clauses for static models  
 DCPF: Distributional Clauses Particle Filter for filtering in dynamic models
 ## Prerequisites
