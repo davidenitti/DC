@@ -5,7 +5,7 @@ DCPF: Distributional Clauses Particle Filter for filtering in dynamic models
 HYPE: planner for hybrid MDPs based on DCPF (code not yet available)  
 HybRel: planner for hybrid relational MDPs based on DCPF (code not yet available)   
 
-The code is in beta, if you need help or find a bug please write an issue.
+The code is in beta, if you need help or find a bug please write an [issue](https://github.com/davidenitti/DC/issues)
 
 ## Prerequisites
 Install Yap prolog (tested on [YAP 6.3.4](https://github.com/vscosta/yap-6.3/archive/master.zip)), follow these instructions:
