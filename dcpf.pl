@@ -40,7 +40,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 :- use_module('random/sampling.pl').
 :- use_module(library(lists)).
-:- current_predicate(user:isprivate/0) -> use_module('distributionalclause.private.pl');use_module(distributionalclause).
+%:- current_predicate(user:isprivate/0) -> use_module('distributionalclause.private.pl');
+:- use_module(distributionalclause).
 :- use_module(library(charsio)).
 
 :- bb_put(initdcpf,false).
@@ -168,7 +169,7 @@ init_particle(N) :-
 	assert(user:timestep(-1)),
 	bb_put(offset,0),
 	bb_put(loglikelihood,0.0),
-	magic,
+	distributionalclause:magic,
 	Tot is N*2+2,
 	get_max_priority(MaxP),
 	eraseall(global),
@@ -210,7 +211,7 @@ init_particle(Actions,PosEvidence,N) :-
 	assert(user:timestep(-1)),
 	bb_put(offset,0),
 	bb_put(loglikelihood,0.0),
-	magic,%_particlefilter,
+	distributionalclause:magic,%_particlefilter,
 	Tot is N*2+2,
 	get_max_priority(MaxP),
 	eraseall(global),
@@ -2854,7 +2855,7 @@ init_bayesfilter :-
 	retractall(user:evidence(_,_)),
 	retractall(user:timestep(_)),
 	assert(user:timestep(-1)),
-	magic,
+	distributionalclause:magic,
 	eraseall(bayes),
 	eraseall(bayes2),
 	init_query(bayes,current(_,_,_)).
@@ -3627,3 +3628,302 @@ eval_average_particle(Avg,X,Query,N,P) :-
 %	write((SUCC,TOT,CList,Avg)),nl,
 	%P is SUCC/TOT,
 	!.
+
+	
+%%%% private part
+inferencestep_particlefilter_backward3(Key) :-
+	bb_put(flag,false),
+	(
+		user:hardclause(next(Head),Body,_),
+		distributionalclause:containscurrent(Body),
+		proof_query_backward_lazy(Key,Body),
+		(
+			ground(Head) ->
+			true;
+			writeln(notground(Head))
+		),
+		\+recorded(Key,next(Head),_),
+		recorda(Key,next(Head),_),
+		bb_put(flag,true),
+		fail;
+		
+		true
+	),
+	%write('-------'),nl,
+	(
+		user:distributionalclause(next(Head2),Distribution,Body,_),
+		Head2\=observation(_),
+		distributionalclause:containscurrent(Body),
+		% RAO
+		/*
+		(
+			raoblackwellisation(true) ->
+			(
+				\+user:rao(Head2)				
+			)
+			;
+			true
+		),
+		*/
+		%
+		proof_query_backward_lazy(Key,Body),%query_proof(Key,Body),
+		
+		ground(Head2), 
+		ground(Distribution), 
+		\+recorded(Key,next(Head2) ~= X,_),
+		
+		%sample(Distribution,Val),
+		
+		recorda(Key,next(Head2) ~= distribution(Distribution),_),
+		bb_put(flag,true),
+		%write(Head2 ~= Val),write(' <- '),write(Pr),write(' '),write(Body),nl, % debug
+		fail;
+		
+		true
+	),
+	bb_delete(flag,Value),
+	(
+		Value==true
+		->
+			inferencestep_particlefilter_backward3(Key)
+		;
+			true
+	).
+	
+
+/*
+inferencestep_particlefilter_backward2_likelihood(Key) :-
+	bb_put(flag,false),
+	(
+		user:hardclause(next(Head),Body,_),
+		proof_query_backward_likelihood(Key,Body,W1),
+		ground(Head),
+		\+recorded(Key,next(Head),_),
+		recorda(Key,next(Head),_),
+		bb_put(flag,true),
+		bb_get(backward2_likelihood,Wold),
+		WNew is Wold*W1,
+		bb_put(backward2_likelihood,WNew),
+		fail;
+		
+		true
+	),
+	%write('-------'),nl,
+	(
+		user:distributionalclause(next(Head2),Distribution,Body,_),
+		Head2\=observation(_),
+		% RAO
+		(
+			raoblackwellisation(true) ->
+			(
+				\+user:rao(Head2)				
+			)
+			;
+			true
+		),
+		%
+		proof_query_backward_likelihood(Key,Body,W2),%query_proof(Key,Body),
+		
+		ground(Head2), 
+		ground(Distribution), 
+		\+recorded(Key,next(Head2) ~= X,_),
+		
+		sample(Distribution,Val),
+				
+		recorda(Key,next(Head2) ~= Val,_),
+		bb_put(flag,true),
+		%write(Head2 ~= Val),write(' <- '),write(Pr),write(' '),write(Body),nl, % debug
+		likelihood_weighting(Val,Distribution,W3),
+		bb_get(backward2_likelihood,Wold2),
+		WNew2 is Wold2*W2*W3,
+		bb_put(backward2_likelihood,WNew2),
+		fail;
+		
+		true
+	),
+	bb_delete(flag,Value),
+	(
+		Value==true
+		->
+			inferencestep_particlefilter_backward2(Key)
+		;
+			true
+	).
+*/
+% for rao-blackwellised magic=off,stratification not used for rao vars.
+inferencestep_particlefilter_magicoff_rao(Key,_) :-
+	/*
+	(
+		user:distributionalclause(current(VarRao),Distribution,Body,Priority),
+		user:rao(VarRao),
+		query_proof_rao(Key,Body,Weight),
+		ground(VarRao), 
+		ground(Distribution),
+		\+recorded(Key,current(VarRao) ~= _,_),
+		recorda(Key,current(VarRao) ~= Distribution,_),
+		fail;
+	
+		true
+	),
+	*/
+	
+	% evaluation of clauses current() for rao variables NOT REALLY USED, TO CHECK!
+	/*
+	(
+		
+		user:distributionalclause(current(VarRao),Distribution,Body,_),
+		user:rao(VarRao),
+		
+		proof_query_backward(Key,Body),
+		
+
+		ground(VarRao),
+		ground(Distribution),
+		%trace,
+		%write(VarRao),nl,write(' Distribution '),write(Distribution),nl,
+		\+recorded(Key,current(VarRao) ~= _,_),
+		%write('new'),nl,
+		recorda(Key,current(VarRao) ~= Distribution,_), % TO CHECK! is not current??
+		%write(next(VarRao) ~= Distribution),nl,
+		fail;
+	
+		true
+		
+	),*/
+	%nl,write(Key),nl,
+	%user:rao(VarRao1),
+	%recorded(Key,current(VarRao1) ~= CurrentDistr,_),
+	%write(current(VarRao1) ~= CurrentDistr),nl,
+	(% evaluation of clauses next() for rao variables with a discrete distribution: finite(...)
+		
+		
+		user:distributionalclause(next(VarRao),finite(Distribution),Body,_),
+		user:rao(VarRao),
+		%trace,
+		query_proof_rao(Key,Body,Weight), % evaluated for every value that satisfy the body (backtracking)
+		ground(VarRao),
+		ground(Distribution),
+		
+		%write((Body,Weight)),nl,
+		%write(VarRao),nl,write(' Distribution '),write(finite(Distribution)),nl,
+		(
+			recorded(Key,next(VarRao) ~= OldDistr,R) ->
+			(
+				sum_distrib(OldDistr,finite(Distribution),Weight,finite(NewDist)), % NewDist = OldDistr + Distribution * Weight
+				%write(next(VarRao) ~= finite(NewDist)),nl,
+				erase(R),
+				cleanDistribution(NewDist,CleanedDistr,0.0),
+				%write(next(VarRao) ~= finite(CleanedDistr)),nl,
+				recorda(Key,next(VarRao) ~= finite(CleanedDistr),_)
+			)
+			;
+			(
+				%write('new'),nl,
+				finite(Temp)=finite(Distribution),
+				multiplyby(Temp,Weight,NewD),
+				recorda(Key,next(VarRao) ~= finite(NewD),_)
+				%write(next(VarRao) ~= finite(NewD)),nl
+			)
+		),
+		
+		fail;
+	
+		true
+	).
+	% add weight evaluation to add clauses from bk!.
+	
+	
+inferencestep_particlefilter_backward_lazy_prior(Key,Pr,Flag) :-
+	bb_put(flag,false),
+	(
+		%between(0,Priority,Pr),
+		user:hardclause(prior(Head),Body,Pr),
+		proof_query_backward_lazy(Key,Body),
+		ground(Head),
+		\+recorded(Key,prior(Head),_),
+		recorda(Key,prior(Head),_),
+		
+		%write(Head),nl,
+		bb_put(flag,true),
+		fail;
+		
+		true
+	),
+	%write('-------'),nl,
+	(
+		%between(0,Priority,Pr), 
+		user:distributionalclause(prior(Head2),Distribution,Body,Pr),
+		% RAO
+		(
+			raoblackwellisation(true) ->
+			(
+				
+				user:rao(Head2) ->
+				(
+					query_proof_rao(Key,Body,_),
+					ground(Head2), 
+					ground(Distribution),
+					\+recorded(Key,prior(Head2) ~= _,_),
+					recorda(Key,prior(Head2) ~= Distribution,_)
+				)
+				;
+				(
+					proof_query_backward_lazy(Key,Body),
+		
+					ground(Head2), 
+					ground(Distribution),
+					\+recorded(Key,prior(Head2) ~= X,_),
+		
+					sample(Distribution,Val),
+				
+					recorda(Key,prior(Head2) ~= Val,_)
+				)
+				
+			)
+			;
+			(
+				proof_query_backward_lazy(Key,Body),
+	
+				ground(Head2), 
+				ground(Distribution),
+				\+recorded(Key,prior(Head2) ~= X,_),
+	
+				sample(Distribution,Val),
+			
+				recorda(Key,prior(Head2) ~= Val,_)
+			)
+		),
+		%
+		
+		%write(Head2 ~= Val),write(' <- '),write(Pr),write(' '),write(Body),nl, % debug
+		bb_put(flag,true),
+		fail;
+		
+		true
+	),
+	bb_delete(flag,Value),
+	(
+		Value==true
+		->
+		(
+			Flag=true,
+			inferencestep_particlefilter_backward_lazy_prior(Key,Pr,_)
+		);
+		(
+			Flag=false
+		)
+	),
+	(
+		lifted(true) -> % Lifted part
+		(
+			user:distributionalclause(prior(Head2),Distribution,Body,Pr),
+			(
+					\+(( ground(Head2), ground(Distribution), ground(Body)) ),
+					\+recorded(global,distributionalclause(current(Head2),_,Body,_),_),
+					recorda(global,distributionalclause(current(Head2),Distribution,Body,0),_)
+			),
+			fail;
+			true
+		);
+		true
+	).

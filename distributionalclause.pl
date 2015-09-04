@@ -1,6 +1,7 @@
 %%% -*- Mode: Prolog; -*-
 
 /*
+
 Copyright 2014, Davide Nitti <firstname dot lastname at gmail dot com>, KU Leuven. All rights reserved.
 
 This program is free software: you can redistribute it and/or modify
@@ -1936,6 +1937,18 @@ likelihood_weighting(Val,gaussian(M,Cov),W) :-
 likelihood_weighting(Val,student(Nu,Mean,Var),W) :-
 	X is (Val-Mean)/sqrt(Var),
 	studentPdf(Nu,X,W),!.
+
+likelihood_weighting(Val,gamma(A,B),W) :-
+	gammaPdf(A,B,Val,W),!.
+
+likelihood_weighting(Val,invgamma(Alpha,Beta),W) :-
+	B is 1/Beta,
+	V is 1.0/Val,
+	gammaPdf(Alpha,B,V,W),!.
+
+likelihood_weighting(Val,dirichlet(Param),W) :-
+	dirichletPdf(Param,Val,W),!.
+
 
 listnelem([],0) :- !.
 listnelem([A|T],L) :-
@@ -5131,3 +5144,2219 @@ init :-
 	%write('init'),nl.
 
 	
+%%%%%%%%% private part %%%%%%%%%
+proof_query_backward_lazy(Key,true) :-
+	!.
+	
+proof_query_backward_lazy(Key,(A,B)) :-
+	!,
+	proof_query_backward_lazy(Key,A),
+	proof_query_backward_lazy(Key,B).
+
+	
+% TO CHECK
+proof_query_backward_lazy(Key,findall_forward(X,Y,Z)) :-
+	findall(X,proof_query_backward_lazy(Key,Y),Z),
+	!.
+
+
+
+proof_query_backward_lazy(Key,\+A) :-
+	user:builtin(A),
+	!,
+	\+user:A.
+		
+proof_query_backward_lazy(Key,A) :-
+%	A\=(\+_),
+	user:builtin(A),
+	!,
+	user:A.
+
+% TO CHECK
+proof_query_backward_lazy(Key,\+A) :-
+	\+proof_query_backward_lazy(Key,A),!.	
+
+proof_query_backward_lazy(Key,A) :-
+	ground(A),
+%	A\= _~= distribution(_),
+	recorded(Key,A,_),
+	!.
+	
+% to support non-sampled variables H ~= distribution(D) in the particles
+proof_query_backward_lazy(Key,H ~= S) :-
+	ground(H~=S),
+	recorded(Key,H ~= distribution(D),R),
+	sample(D,Val),
+	erase(R),
+	recorda(Key,H ~= Val,_),
+	S=Val,
+	!.
+	
+proof_query_backward_lazy(Key,A) :-
+	recorded(Key,A,_),
+	A\= _~= distribution(_).
+
+
+% to support non-sampled variables H ~= distribution(D) in the particles
+proof_query_backward_lazy(Key,H ~= S) :-
+	recorded(Key,H ~= distribution(D),R),
+	sample(D,Val),
+	erase(R),
+	(
+	(\+erased(R),recorded(Key,H ~= V,_)) -> % TO TEST
+		(
+			V=S,
+			writeln('warning '),
+			writeln(recorded(Key,H ~= distribution(D),R)),
+			writeln( proof_query_backward_lazy(Key,H ~= S)),
+			dcpf:printkeyp(Key),nl,
+			erase(R)
+		)
+		;
+		(
+		recorda(Key,H ~= Val,_),
+		S=Val
+		)
+	
+	).
+	
+
+%%% Tabling %%%
+proof_query_backward_lazy(Key,Head ~= Val) :-
+	tabling_proof_query_backward_lazy(Key,Head,Distribution),
+	ground(Head),
+	ground(Distribution),
+	\+recorded(Key,Head ~= _,_),
+	sample(Distribution,Var),
+	recorda(Key,Head ~= Var,_),
+	Var=Val.
+
+proof_query_backward_lazy(Key,Head) :-
+	Head\=(_ ~= _),
+	tabling_proof_query_backward_lazy(Key,Head),	
+	ground(Head),
+	\+recorded(Key,Head,_),
+	recorda(Key,Head,_).
+
+%proof_query_backward_lazy(Key,A) :-
+%	recorded(Key,A,_).
+
+tabling_proof_query_backward_lazy(Key,Head,Distribution) :-
+	user:distributionalclause(Head,Distribution,Body,_),
+ 	proof_query_backward_lazy(Key,Body).
+
+	
+tabling_proof_query_backward_lazy(Key,Head) :-
+	user:hardclause(Head,Body,_),
+	proof_query_backward_lazy(Key,Body).
+
+
+proof_query_backward_lazy(Key,Head ~= Val) :-
+	recorded(global,distributionalclause(Head,Distribution,Body,_),_),
+ 	proof_query_backward_lazy(Key,Body),
+	ground(Head),
+	ground(Distribution),
+	\+recorded(Key,Head ~= _,_),
+	sample(Distribution,Var),
+	recorda(Key,Head ~= Var,_),
+	Var=Val.
+
+
+
+% with a temporary index to store sampled variables
+% don't use Key=Temp!
+
+proof_query_backward_lazy(Key,Key,_) :-
+	!,
+	writeln('error proof_query_backward_lazy: Key=Temp'),
+	!.
+
+proof_query_backward_lazy(Key,Temp,true) :-
+	!.
+	
+proof_query_backward_lazy(Key,Temp,(A,B)) :-
+	!,
+	proof_query_backward_lazy(Key,Temp,A),
+	proof_query_backward_lazy(Key,Temp,B).
+
+
+% Really slow!
+proof_query_backward_lazy(Key,Temp,findall_forward(X,Y,Z)) :-
+	findall(X,proof_query_backward_lazy(Key,Temp,Y),Z),
+	!.
+
+proof_query_backward_lazy(Key,Temp,\+A) :-
+	user:builtin(A),
+	!,
+	\+user:A.
+		
+proof_query_backward_lazy(Key,Temp,A) :-
+%	A\=(\+_),
+	user:builtin(A),
+	!,
+	user:A.
+
+% TO CHECK
+proof_query_backward_lazy(Key,Temp,\+A) :-
+	\+proof_query_backward_lazy(Key,Temp,A),!.
+
+proof_query_backward_lazy(Key,Temp,A) :-
+	ground(A),
+%	A\= _~= distribution(_),
+	recorded(Key,A,_),
+	!.
+
+proof_query_backward_lazy(Key,Temp,A) :-
+	ground(A),
+%	A\= _~= distribution(_),
+	recorded(Temp,A,_),
+	!.
+% to support non-sampled variables H ~= distribution(D) in the particles
+proof_query_backward_lazy(Key,Temp,H ~= S) :-
+	ground(H~=S),
+	recorded(Key,H ~= distribution(D),R),
+	%\+recorded(Temp,H ~= _,_), % is always true
+	sample(D,Val),
+%	erase(R),
+	recorda(Temp,H ~= Val,_),
+	S=Val,
+	!.
+%%% Tabling %%%
+
+proof_query_backward_lazy(Key,Temp,A) :-
+	recorded(Key,A,_),
+	A\= _~= distribution(_).
+	
+proof_query_backward_lazy(Key,Temp,A) :-
+	recorded(Temp,A,_),
+	A\= _~= distribution(_).
+
+% to support non-sampled variables H ~= distribution(D) in the particles
+proof_query_backward_lazy(Key,Temp,H ~= S) :-
+	recorded(Key,H ~= distribution(D),R),
+	\+recorded(Temp,H ~= _,_),
+	sample(D,Val),
+	recorda(Temp,H ~= Val,_),
+	S=Val.
+
+proof_query_backward_lazy(Key,Temp,Head ~= Val) :-
+	tabling_proof_query_backward_lazy2(Key,Temp,Head,Distribution),
+	ground(Head),
+	ground(Distribution),
+	\+recorded(Key,Head ~= _,_),
+	\+recorded(Temp,Head ~= _,_),
+	sample(Distribution,Var),
+	recorda(Temp,Head ~= Var,_),
+	Var=Val.
+
+proof_query_backward_lazy(Key,Temp,Head ~= Val) :-
+	recorded(global,distributionalclause(Head,Distribution,Body,_),_),
+ 	proof_query_backward_lazy(Key,Temp,Body),
+	ground(Head),
+	ground(Distribution),
+	\+recorded(Key,Head ~= _,_),
+	\+recorded(Temp,Head ~= _,_),
+	sample(Distribution,Var),
+	recorda(Temp,Head ~= Var,_),
+	Var=Val.
+
+proof_query_backward_lazy(Key,Temp,Head) :-
+	Head\=(_ ~= _),
+	tabling_proof_query_backward_lazy2(Key,Temp,Head),	
+	ground(Head),
+	\+recorded(Key,Head,_),
+	\+recorded(Temp,Head,_),
+	recorda(Temp,Head,_).
+	
+tabling_proof_query_backward_lazy2(Key,Temp,Head,Distribution) :-
+	user:distributionalclause(Head,Distribution,Body,_),
+	proof_query_backward_lazy(Key,Temp,Body).
+	
+tabling_proof_query_backward_lazy2(Key,Temp,Head) :-
+	user:hardclause(Head,Body,_),
+	proof_query_backward_lazy(Key,Temp,Body).
+	
+
+
+% don't use Key=Temp
+proof_query_backward_lazy_eval(Key,Temp,true,1.0) :-
+	!.
+
+% error in proof_query_backward_lazy_eval	
+proof_query_backward_lazy_eval(Key,Temp,(A,B),W) :-
+	!,
+	proof_query_backward_lazy_eval(Key,Temp,A,W1),
+	proof_query_backward_lazy_eval(Key,Temp,B,W2),
+	W is W1*W2.
+
+% TO CHECK
+proof_query_backward_lazy_eval(Key,Temp,findall_forward(X,Y,Z),1.0) :-
+	findall(X,proof_query_backward_lazy(Key,Temp,Y),Z),
+	!.
+
+proof_query_backward_lazy_eval(Key,Temp,\+A,1.0) :-
+	user:builtin(A),
+	!,
+	\+user:A.
+		
+proof_query_backward_lazy_eval(Key,Temp,A,1.0) :-
+%	A\=(\+_),
+	user:builtin(A),
+	!,
+	user:A.
+
+proof_query_backward_lazy_eval(Key,Temp,\+A,1.0) :-
+	\+proof_query_backward_lazy(Key,Temp,A),!.
+
+
+proof_query_backward_lazy_eval(Key,Temp,A,1.0) :-
+	ground(A),
+	A\=(\+_),
+	A\= _~= distribution(_),
+	recorded(Key,A,_),
+	!.
+
+proof_query_backward_lazy_eval(Key,Temp,A,1.0) :-
+	ground(A),
+	A\=(\+_),
+	A\= _~= distribution(_),
+	recorded(Temp,A,_),
+	!.
+	
+% to support non-sampled variables H ~= distribution(D) in the particles	
+proof_query_backward_lazy_eval(Key,Temp,H~=Val,W) :-
+	ground(H~=Val),
+	recorded(Key,H ~= distribution(D),R),
+	\+recorded(Temp,H ~= _,_),
+	likelihood_weighting(Val,D,W),
+	recorda(Temp,H~=Val,_),
+	!.
+
+%%% Tabling %%%
+
+proof_query_backward_lazy_eval(Key,Temp,A,1.0) :-
+	A\=(\+_),
+	recorded(Key,A,_),
+	A\= _~= distribution(_).
+	
+proof_query_backward_lazy_eval(Key,Temp,A,1.0) :-
+	A\=(\+_),
+	recorded(Temp,A,_),
+	A\= _~= distribution(_).
+
+proof_query_backward_lazy_eval(Key,Temp,H ~= S,1.0) :-
+	\+ground(S),
+	recorded(Key,H ~= distribution(D),R),
+	\+recorded(Temp,H ~= _,_),
+	sample(D,Val),
+	recorda(Temp,H ~= Val,_),
+	S=Val.
+	
+proof_query_backward_lazy_eval(Key,Temp,Head ~= Var,W) :-
+	user:distributionalclause(Head,Distribution,Body,_),
+	(
+	 	proof_query_backward_lazy(Key,Temp,Body),
+		%ground(Head),
+		ground(Distribution),
+		%ground(Body),
+		(
+			ground(Head ~= Var) ->
+			(
+				\+recorded(Key,Head ~= _,_),
+				\+recorded(Temp,Head ~= _,_),
+				likelihood_weighting(Var,Distribution,W),
+				recorda(Temp,Head ~= Var,_)
+			)
+			;
+			(
+				\+recorded(Key,Head ~= _,_),
+				\+recorded(Temp,Head ~= _,_),
+				sample(Distribution,Var),
+				recorda(Temp,Head ~= Var,_),
+				W=1.0
+			)
+		)
+	).
+
+proof_query_backward_lazy_eval(Key,Temp,Head ~= Var,W) :-
+	recorded(global,distributionalclause(Head,Distribution,Body,_),_),
+	(
+	 	proof_query_backward_lazy(Key,Temp,Body),
+		%ground(Head),
+		ground(Distribution),
+		%ground(Body),
+		(
+			ground(Head ~= Var) ->
+			(
+				\+recorded(Key,Head ~= _,_),
+				\+recorded(Temp,Head ~= _,_),
+				likelihood_weighting(Var,Distribution,W),
+				recorda(Temp,Head ~= Var,_)
+			)
+			;
+			(
+				\+recorded(Key,Head ~= _,_),
+				\+recorded(Temp,Head ~= _,_),
+				sample(Distribution,Var),
+				recorda(Temp,Head ~= Var,_),
+				W=1.0
+			)
+		)
+	).
+
+proof_query_backward_lazy_eval(Key,Temp,Head,1.0) :-
+	Head\= _ ~= _,
+	user:hardclause(Head,Body,_),
+	proof_query_backward_lazy(Key,Temp,Body),
+	ground(Head),
+	\+recorded(Key,Head,_),
+	\+recorded(Temp,Head,_),
+	recorda(Temp,Head,_).
+
+
+
+% check evidence eval
+proof_query_backward_lazy_eval(Key,true,1.0) :-
+	!.
+
+proof_query_backward_lazy_eval(Key,(A,B),W) :-
+	!,
+	proof_query_backward_lazy_eval(Key,A,W1),
+	proof_query_backward_lazy_eval(Key,B,W2),
+	W is W1*W2.
+
+% TO CHECK
+proof_query_backward_lazy_eval(Key,findall_forward(X,Y,Z),1.0) :-
+	findall(X,proof_query_backward_lazy(Key,Y),Z),
+	!.
+
+proof_query_backward_lazy_eval(Key,\+A,1.0) :-
+	user:builtin(A),
+	!,
+	\+user:A.
+		
+proof_query_backward_lazy_eval(Key,A,1.0) :-
+%	A\=(\+_),
+	user:builtin(A),
+	!,
+	user:A.
+
+proof_query_backward_lazy_eval(Key,\+A,1.0) :-
+	\+proof_query_backward_lazy(Key,A),!.
+
+proof_query_backward_lazy_eval(Key,A,1.0) :-
+	ground(A),
+	A\=(\+_),
+	recorded(Key,A,_),
+	A\= _~= distribution(_),
+	!.
+
+% to support non-sampled variables H ~= distribution(D) in the particles		
+proof_query_backward_lazy_eval(Key,H~=Val,W) :-
+	ground(H~=Val),
+	recorded(Key,H ~= distribution(D),R),
+	likelihood_weighting(Val,D,W),
+	erase(R),
+	recorda(Key,H~=Val,_),
+	!.
+	
+%%% Tabling %%%
+
+proof_query_backward_lazy_eval(Key,A,1.0) :-
+	A\=(\+_),
+	recorded(Key,A,_),
+	A\= _~= distribution(_).
+
+proof_query_backward_lazy_eval(Key,H ~= S,1.0) :-
+	\+ground(S),
+	recorded(Key,H ~= distribution(D),R),
+	\+recorded(Temp,H ~= _,_),
+	sample(D,Val),
+	erase(R),
+	recorda(Key,H ~= Val,_),
+	S=Val.
+		
+proof_query_backward_lazy_eval(Key,Head ~= Var,W) :-
+	user:distributionalclause(Head,Distribution,Body,_),
+	(
+	 	proof_query_backward_lazy(Key,Body),
+		%ground(Head),
+		ground(Distribution),
+		%ground(Body),
+		(
+			ground(Head ~= Var) ->
+			(
+				\+recorded(Key,Head ~= _,_),
+				likelihood_weighting(Var,Distribution,W),
+				recorda(Key,Head ~= Var,_)
+			)
+			;
+			(
+				\+recorded(Key,Head ~= _,_),
+				sample(Distribution,Var),
+				recorda(Key,Head ~= Var,_),
+				W=1.0
+			)
+		)
+	).
+
+proof_query_backward_lazy_eval(Key,Head ~= Var,W) :-
+	recorded(global,distributionalclause(Head,Distribution,Body,_),_),
+	(
+	 	proof_query_backward_lazy(Key,Body),
+		%ground(Head),
+		ground(Distribution),
+		%ground(Body),
+		(
+			ground(Head ~= Var) ->
+			(
+				\+recorded(Key,Head ~= _,_),
+				likelihood_weighting(Var,Distribution,W),
+				recorda(Key,Head ~= Var,_)
+			)
+			;
+			(
+				\+recorded(Key,Head ~= _,_),
+				sample(Distribution,Var),
+				recorda(Key,Head ~= Var,_),
+				W=1.0
+			)
+		)
+	).
+
+proof_query_backward_lazy_eval(Key,Head,1.0) :-
+	Head\= _ ~= _,
+	user:hardclause(Head,Body,_),
+	proof_query_backward_lazy(Key,Body),
+	ground(Head),
+	\+recorded(Key,Head,_),
+	recorda(Key,Head,_).
+
+
+
+query_proof_rao(Key,true,1.0) :-
+	!.
+query_proof_rao(Key,(A,B),W) :-
+	!,
+	query_proof_rao(Key,A,W1),
+	query_proof_rao(Key,B,W2),
+	W is W1*W2.
+
+
+query_proof_rao(Key,current(A) ~= Val,W) :-
+	user:rao(A),
+	recorded(Key,current(A) ~= finite(Distribution),_),
+	member(W:Val,Distribution).
+	
+query_proof_rao(Key,next(A) ~= Val,W) :-
+	user:rao(A),
+	recorded(Key,next(A) ~= finite(Distribution),_),
+	member(W:Val,Distribution).
+	%findall(W:Val,member(W:Val,Distribution),List).
+	
+query_proof_rao(Key,current(A) ~= Val,0.0) :-
+	user:rao(A),
+	recorded(Key,current(A) ~= finite(Distribution),_),
+	\+member(W:Val,Distribution).
+	
+query_proof_rao(Key,next(A) ~= Val,0.0) :-
+	user:rao(A),
+	recorded(Key,next(A) ~= finite(Distribution),_),
+	\+member(W:Val,Distribution).
+
+query_proof_rao(Key,current(A) ~= Val,1.0) :-
+	\+user:rao(A),
+	(
+		inference(backward(_)) ->
+			proof_query_backward(Key,current(A) ~= Val)
+		;
+			query_proof(Key,current(A) ~= Val)
+	).
+	
+query_proof_rao(Key,next(A) ~= Val,1.0) :-
+	\+user:rao(A),
+	(
+		inference(backward(_)) ->
+			proof_query_backward(Key,next(A) ~= Val)
+		;
+			query_proof(Key,next(A) ~= Val)
+	).
+	
+query_proof_rao(Key,A,1.0) :-
+	A\= _ ~= _,
+	A\= (\+ _),
+	(
+		inference(backward(_)) ->
+			proof_query_backward(Key,A)
+		;
+			query_proof(Key,A)
+	).
+
+%TO TEST
+
+query_proof_rao(Key,\+A,W) :-
+	(
+		query_proof_rao(Key,A,W1) ->
+		(
+			W is 1-W1
+		)
+		;
+		(
+			W=1
+		)
+	).
+
+
+
+/*
+query_proof_rao(Key,A ~= Val,W) :-
+	(
+		recorded(Key,A ~= finite(Distribution),_) ->
+		(
+			true
+		)
+		;
+		(
+			A=next(F),
+			user:distributionalclause(bk(F),finite(Distribution),Body,_),
+			ground(F),
+			ground(Distribution),
+			ground(Body),
+			Body,
+			recorda(Key,next(F) ~= finite(Distribution),_)
+		)
+	),
+	!,
+	recorded(Key,A ~= finite(Distribution),_),
+	member(W:Val,Distribution).
+	
+	%findall(W:Val,member(W:Val,Distribution),List).
+
+query_proof_rao(Key,A,1.0) :-
+	A\= current(_) ~= finite(_),
+	A\= next(_) ~= finite(_),
+	query_proof(Key,A).% to check!
+	
+query_proof_rao(Key,\+A,1.0) :-
+	A\= current(_) ~= finite(_),
+	A\= next(_) ~= finite(_),
+	query_proof(Key,\+A).
+*/	
+
+
+query_proof_setRaoBackward(Key,true,Var,Val,0) :-
+	!.
+query_proof_setRaoBackward(Key,(A,B),Var,Val,Ignore) :-
+	!,
+	query_proof_setRaoBackward(Key,A,Var,Val,Ignore1),
+	(
+		Ignore1==1 ->
+			true
+		;
+			query_proof_setRaoBackward(Key,B,Var,Val,Ignore)
+	).
+
+query_proof_setRaoBackward(Key,A,Var,Val,Ignore) :-
+	(
+		A= next(Var) ~= V ->
+		(
+			V=Val,
+			Ignore=0
+		)
+		;
+		(
+			(A= next(Var2) ~= V,user:rao(Var2),Var2\=Var) ->
+			(
+				Ignore=1
+			)
+			;
+			(
+				Ignore=0,
+				proof_query_backward(Key,A)
+			)
+		)
+	).
+
+
+%used in add_rao_backward to add rao variables needed to evaluate the evidence 
+query_proof_defineRaoBackward(Key,true) :-
+	!.
+query_proof_defineRaoBackward(Key,(A,B)) :-
+	!,
+	query_proof_defineRaoBackward(Key,A),
+	query_proof_defineRaoBackward(Key,B).
+
+query_proof_defineRaoBackward(Key,A) :-
+	(
+	
+		(A= next(Var) ~= _,user:rao(Var)) ->
+		(
+			(\+recorded(Key,next(Var) ~= _,_),\+recorded(Key,current(Var) ~= _,_)) ->
+			(
+				user:distributionalclause(current(Var),Distribution,Body,_),
+				proof_query_backward(Key,Body),
+				ground(Var),
+				ground(Distribution),
+				recorda(Key,current(Var) ~= Distribution,_),
+				write(current(Var) ~= Distribution),nl
+			)
+			;
+			true
+		)
+		;
+		(
+			proof_query_backward(Key,A)
+		)
+
+	).
+
+
+% verify the query A (2nd argument) with next(Var)=Val
+% Ignore used for pruning resolution (body referred to another rao variable)
+
+query_proof_setRao(Key,true,Var,Val,0) :-
+	!.
+query_proof_setRao(Key,(A,B),Var,Val,Ignore) :-
+	!,
+	query_proof_setRao(Key,A,Var,Val,Ignore1),
+	(
+		Ignore1==1 ->
+			true
+		;
+			query_proof_setRao(Key,B,Var,Val,Ignore)
+	).
+
+query_proof_setRao(Key,A,Var,Val,Ignore) :-
+	(
+		A= next(Var) ~= V ->
+		(
+			V=Val,
+			Ignore=0
+		)
+		;
+		(
+			(A= next(Var2) ~= V,user:rao(Var2),Var2\=Var) ->
+			(
+				Ignore=1
+			)
+			;
+			(
+				Ignore=0,
+				query_proof(Key,A)
+			)
+		)
+	).
+	
+	
+proof_query_backward_lifted(Key,next(Head)) :-
+	user:distributionalclause(next(Head),Distribution,Body,_),
+ 	proof_query_backward_clause(Key,Body,Body2,ListDistributions),
+ 	%writeln(proof_query_backward_clause(Key,Body,Body2,ListDistributions)),
+	%\+ground(Body2),
+	computeDistribution(Distribution,ListDistributions,NewDistr),
+	test_to_list(NewBody,Body2),
+	\+recorded(Key,distributionalclause(next(Head),_,NewBody,_),_),
+	recorda(Key,distributionalclause(next(Head),NewDistr,NewBody,0),_).
+	%writeln(distributionalclause(next(Head),NewDistr,NewBody,0)).
+	
+proof_query_backward_lifted2(Key,next(Head)) :-
+	
+	user:distributionalclause(next(Head),_,_,_),
+	\+ground(Head),
+	bb_put(l,finite([])),
+	findall(W:D,(user:distributionalclause(next(Head),D,Body,_),
+ 	proof_query_backward_clause2(Key,Body,W),bb_get(l,OL),sum_distrib(OL,D,W,Sum),bb_put(l,Sum)),L),
+ 	bb_delete(l,LL),LL\=finite([]),%writeln(LL),
+	
+	\+recorded(Key,distributionalclause(next(Head),_,true,_),_),
+	recorda(Key,distributionalclause(next(Head),LL,true,0),_).
+%	writeln(distributionalclause(next(Head),LL,true,0)),dcpf:printp(1).
+	
+% New inference
+	
+% with a list to store sampled variables. during backtracking sampled random variables may be removed.
+proof_query_backward_exp(Key,List,[],true) :-
+	!.
+	
+proof_query_backward_exp(Key,List,NewList,(A,B)) :-
+	!,
+	proof_query_backward_exp(Key,List,NewList1,A),
+	append([List,NewList1],List2),
+	proof_query_backward_exp(Key,List2,NewList2,B),
+	append([NewList1,NewList2],NewList).
+
+
+% NOT COMPLETE!
+proof_query_backward_exp(Key,Temp,[],findall_forward(X,Y,Z)) :-
+	findall(X,proof_query_backward_exp(Key,Temp,Temp2,Y),Z),
+	!.
+
+proof_query_backward_exp(Key,List,[],\+A) :-
+	user:builtin(A),
+	!,
+	\+user:A.
+		
+proof_query_backward_exp(Key,List,[],A) :-
+%	A\=(\+_),
+	user:builtin(A),
+	!,
+	user:A.
+
+% TO CHECK problem with negation, if proof_query_backward_exp fails I need to consider the sampled random variables in NewList, that remains ungrounded
+%proof_query_backward_exp(Key,List,NewList,\+A) :-
+%	\+proof_query_backward_exp(Key,List,NewList,A),!.
+% temporary fix!
+proof_query_backward_exp(Key,List,[],\+A) :-
+	\+proof_query_backward_exp(Key,List,NewList,A),!.
+
+% prototype for negation! not complete
+proof_query_backward_exp(Key,List,[not(NewList)],\+A) :-
+	proof_query_backward_exp(Key,List,NewList,A),!.
+
+
+proof_query_backward_exp(Key,List,[],A) :-
+	ground(A),
+	recorded(Key,A,_),
+	A\= _~= distribution(_),
+	!.
+
+proof_query_backward_exp(Key,List,[],A) :-
+	ground(A),
+	memberchk(A,List),
+	!.
+
+
+proof_query_backward_exp(Key,List,[H ~= Val],H ~= S) :-
+	ground(H~=S),
+	recorded(Key,H ~= distribution(D),R),
+	sample(D,Val),
+%	recorda(Key,H ~= Val,_),
+	S=Val,
+	!.
+
+proof_query_backward_exp(Key,List,[H ~= Val],H~=Val) :-
+%	ground(H~=Val),
+	recorded(Key,H ~= distribution(D),R),
+	\+member(H~=_,List),
+	sample(D,Val).
+
+
+	
+%%% Tabling %%%
+
+proof_query_backward_exp(Key,List,[],A) :-
+	recorded(Key,A,_),
+	A\= _~= distribution(_).
+	
+proof_query_backward_exp(Key,List,[],A) :-
+	member(A,List).
+
+proof_query_backward_exp(Key,List,[Head ~= Var|Newvars],Head ~= Val) :-
+	tabling_proof_query_backward_exp2(Key,List,Newvars,Head,Distribution),
+	ground(Head),
+	ground(Distribution),
+	\+recorded(Key,Head ~= _,_),
+	append([List,Newvars],Temp),
+	\+member(Head ~= _,Temp), %\+recorded(Temp,Head ~= _,_),
+	sample(Distribution,Var),
+	%recorda(Temp,Head ~= Var,_),
+	Var=Val.
+
+proof_query_backward_exp(Key,List,[Head ~= Var|Newvars],Head ~= Val) :-
+	recorded(global,distributionalclause(Head,Distribution,Body,_),_),
+ 	proof_query_backward_exp(Key,List,Newvars,Body),
+	ground(Head),
+	ground(Distribution),
+	\+recorded(Key,Head ~= _,_),
+	append([List,Newvars],Temp),
+	\+member(Head ~= _,Temp),%\+recorded(Temp,Head ~= _,_),
+	sample(Distribution,Var),
+	%recorda(Temp,Head ~= Var,_),
+	Var=Val.
+
+proof_query_backward_exp(Key,List,[Head|Newvars],Head) :-
+	Head\=(_ ~= _),
+	tabling_proof_query_backward_exp2(Key,List,Newvars,Head),	
+	ground(Head),
+	\+recorded(Key,Head,_),
+	append([List,Newvars],Temp),
+	\+member(Head,Temp).%\+recorded(Temp,Head,_),
+	%recorda(Temp,Head,_).
+	
+tabling_proof_query_backward_exp2(Key,List,Newvars,Head,Distribution) :-
+	user:distributionalclause(Head,Distribution,Body,_),
+	proof_query_backward_exp(Key,List,Newvars,Body).
+	
+tabling_proof_query_backward_exp2(Key,List,Newvars,Head) :-
+	user:hardclause(Head,Body,_),
+	proof_query_backward_exp(Key,List,Newvars,Body).
+
+
+proof_query_backward_exp_eval(Key,List,[],true,1.0) :-
+	!.
+
+
+proof_query_backward_exp_eval(Key,List,NewList,(A,B),W) :-
+	!,
+	proof_query_backward_exp_eval(Key,List,NewList1,A,W1),
+	append([List,NewList1],List2),
+	proof_query_backward_exp_eval(Key,List2,NewList2,B,W2),
+	append([NewList1,NewList2],NewList),
+	W is W1*W2.
+
+% NOT IMPLEMENTED
+%proof_query_backward_exp_eval(Key,Temp,findall_forward(X,Y,Z),1.0) :-
+%	findall(X,proof_query_backward(Key,Temp,Y),Z),
+%	!.
+
+proof_query_backward_exp_eval(Key,List,[],\+A,1.0) :-
+	user:builtin(A),
+	!,
+	\+user:A.
+		
+proof_query_backward_exp_eval(Key,List,[],A,1.0) :-
+%	A\=(\+_),
+	user:builtin(A),
+	!,
+	user:A.
+
+proof_query_backward_exp_eval(Key,List,Newvars,\+A,1.0) :-
+	\+proof_query_backward_exp(Key,List,Newvars,A),!.
+
+proof_query_backward_exp_eval(Key,List,Newvars,\+A,0.0) :-
+	proof_query_backward_exp(Key,List,Newvars,A).
+
+proof_query_backward_exp_eval(Key,List,[],A,1.0) :-
+	ground(A),
+	A\=(\+_),
+	A\= _~= distribution(_),
+	recorded(Key,A,_),
+	!.
+
+
+proof_query_backward_exp_eval(Key,List,[],A,1.0) :-
+	ground(A),
+	A\=(\+_),
+	memberchk(A,List),%recorded(Temp,A,_),
+	!.	
+	
+% TO TEST!!
+% to support non-sampled variables H ~= distribution(D) in the particles
+proof_query_backward_exp_eval(Key,List,[H ~= Val],H~=Val,W) :-
+%	ground(H~=Val),
+	recorded(Key,H ~= distribution(D),R),
+	\+member(H~=_,List),
+	likelihood_weighting(Val,D,W).
+
+
+proof_query_backward_exp_eval(Key,List,[],A,1.0) :-
+	A\=(\+_),
+	recorded(Key,A,_),
+	A\= _~= distribution(_).
+	
+proof_query_backward_exp_eval(Key,List,[],A,1.0) :-
+	A\=(\+_),
+	member(A,List).%recorded(Temp,A,_).
+
+proof_query_backward_exp_eval(Key,List,[Head ~= Var|Newvars],Head ~= Var,W) :-
+	user:distributionalclause(Head,Distribution,Body,_),
+	(
+	 	proof_query_backward_exp(Key,List,Newvars,Body),
+	 	append([List,Newvars],List2),
+		%ground(Head),
+		ground(Distribution),
+		%ground(Body),
+		(
+			ground(Head ~= Var) ->
+			(
+				\+recorded(Key,Head ~= _,_),
+				\+member(Head ~= _,List2),%\+recorded(Temp,Head ~= _,_),
+				likelihood_weighting(Var,Distribution,W)%,
+				%recorda(Temp,Head ~= Var,_)
+			)
+			;
+			(
+				\+recorded(Key,Head ~= _,_),
+				\+member(Head ~= _,List2),%\+recorded(Temp,Head ~= _,_),
+				sample(Distribution,Var),
+				%recorda(Temp,Head ~= Var,_),
+				W=1.0
+			)
+		)
+	).
+
+proof_query_backward_exp_eval(Key,List,[Head ~= Var|Newvars],Head ~= Var,W) :-
+	recorded(global,distributionalclause(Head,Distribution,Body,_),_),
+	(
+	 	proof_query_backward_exp(Key,List,Newvars,Body),
+	 	append([List,Newvars],List2),
+		%ground(Head),
+		ground(Distribution),
+		%ground(Body),
+		(
+			ground(Head ~= Var) ->
+			(
+				\+recorded(Key,Head ~= _,_),
+				\+member(Head ~= _,List2),%\+recorded(Temp,Head ~= _,_),
+				likelihood_weighting(Var,Distribution,W)%,
+				%recorda(Temp,Head ~= Var,_)
+			)
+			;
+			(
+				\+recorded(Key,Head ~= _,_),
+				\+member(Head ~= _,List2),%\+recorded(Temp,Head ~= _,_),
+				sample(Distribution,Var),
+				%recorda(Temp,Head ~= Var,_),
+				W=1.0
+			)
+		)
+	).
+
+proof_query_backward_exp_eval(Key,List,[Head|Newvars],Head,1.0) :-
+	Head\= _ ~= _,
+	user:hardclause(Head,Body,_),
+	proof_query_backward_exp(Key,List,Newvars,Body),
+	ground(Head),
+	\+recorded(Key,Head,_),
+	append([List,Newvars],List2),
+	\+member(Head,List2).%\+recorded(Temp,Head,_),
+	%recorda(Temp,Head,_).
+
+
+%proof_query_backward_exp_eval(Key,List,Newvars,Head,0.0) :-
+%	Head\= _ ~= _,
+%	user:hardclause(Head,Body,_),
+%	\+proof_query_backward_exp(Key,List,Newvars,Body).	
+
+%proof_query_backward_eval(Key,Temp,A,0.0) :-
+%	\+proof_query_backward_eval(Key,Temp,A,_).
+
+check_evidence_backward_exp(Key,List,Newvars,Wtot) :-
+	findall(H,user:evidence(H,1),L),
+	check_evidence_proof_exp(Key,List,Newvars,L,Wtot).
+
+check_evidence_proof_exp(Key,List,[],[],1.0) :- !.
+
+check_evidence_proof_exp(Key,List,Newvars3,[H|ListEvidence],W) :-
+	proof_query_backward_exp_eval(Key,List,Newvars,H,W1),
+	append([List,Newvars],List2),
+	check_evidence_proof_exp(Key,List2,Newvars2,ListEvidence,W2),
+	append([Newvars,Newvars2],Newvars3),
+	W is W1*W2,
+	!.
+	
+%%%% end new inference %%%
+
+%%% exact %%%
+% New inference
+	
+% with a list to store sampled variables
+proof_query_backward_exact(Key,List,[],true) :-
+	!.
+	
+proof_query_backward_exact(Key,List,NewList,(A,B)) :-
+	!,
+	proof_query_backward_exact(Key,List,NewList1,A),
+	append([List,NewList1],List2),
+	proof_query_backward_exact(Key,List2,NewList2,B),
+	append([NewList1,NewList2],NewList).
+
+
+% NOT COMPLETE!
+proof_query_backward_exact(Key,Temp,[],findall_forward(X,Y,Z)) :-
+	findall(X,proof_query_backward_exact(Key,Temp,Temp2,Y),Z),
+	!.
+
+proof_query_backward_exact(Key,List,[],\+A) :-
+	user:builtin(A),
+	!,
+	\+user:A.
+		
+proof_query_backward_exact(Key,List,[],A) :-
+%	A\=(\+_),
+	user:builtin(A),
+	!,
+	user:A.
+
+% TO CHECK
+proof_query_backward_exact(Key,List,NewList,\+A) :-
+	\+proof_query_backward_exact(Key,List,NewList,A),!.
+
+proof_query_backward_exact(Key,List,[],A) :-
+	ground(A),
+	recorded(Key,A,_),
+	!.
+
+proof_query_backward_exact(Key,List,[],A) :-
+	ground(A),
+	memberchk(A,List),
+	!.
+
+%%% Tabling %%%
+
+proof_query_backward_exact(Key,List,[],A) :-
+	recorded(Key,A,_).
+	
+proof_query_backward_exact(Key,List,[],A) :-
+	member(A,List).
+
+proof_query_backward_exact(Key,List,[Head ~= Var|Newvars],Head ~= Val) :-
+	tabling_proof_query_backward_exact2(Key,List,Newvars,Head,Distribution),
+	ground(Head),
+	ground(Distribution),
+	\+recorded(Key,Head ~= _,_),
+	append([List,Newvars],Temp),
+	\+member(Head ~= _,Temp), %\+recorded(Temp,Head ~= _,_),
+	sample(Distribution,Var),
+	%recorda(Temp,Head ~= Var,_),
+	Var=Val.
+
+proof_query_backward_exact(Key,List,[Head ~= Var|Newvars],Head ~= Val) :-
+	recorded(global,distributionalclause(Head,Distribution,Body,_),_),
+ 	proof_query_backward_exact(Key,List,Newvars,Body),
+	ground(Head),
+	ground(Distribution),
+	\+recorded(Key,Head ~= _,_),
+	append([List,Newvars],Temp),
+	\+member(Head ~= _,Temp),%\+recorded(Temp,Head ~= _,_),
+	sample(Distribution,Var),
+	%recorda(Temp,Head ~= Var,_),
+	Var=Val.
+
+proof_query_backward_exact(Key,List,[Head|Newvars],Head) :-
+	Head\=(_ ~= _),
+	tabling_proof_query_backward_exact2(Key,List,Newvars,Head),	
+	ground(Head),
+	\+recorded(Key,Head,_),
+	append([List,Newvars],Temp),
+	\+member(Head,Temp).%\+recorded(Temp,Head,_),
+	%recorda(Temp,Head,_).
+	
+tabling_proof_query_backward_exact2(Key,List,Newvars,Head,Distribution) :-
+	user:distributionalclause(Head,Distribution,Body,_),
+	proof_query_backward_exact(Key,List,Newvars,Body).
+	
+tabling_proof_query_backward_exact2(Key,List,Newvars,Head) :-
+	user:hardclause(Head,Body,_),
+	proof_query_backward_exact(Key,List,Newvars,Body).
+
+
+proof_query_backward_exact_eval(Key,List,[],true,1.0) :-
+	!.
+
+
+proof_query_backward_exact_eval(Key,List,NewList,(A,B),W) :-
+	!,
+	proof_query_backward_exact_eval(Key,List,NewList1,A,W1),
+	append([List,NewList1],List2),
+	proof_query_backward_exact_eval(Key,List2,NewList2,B,W2),
+	append([NewList1,NewList2],NewList),
+	W is W1*W2.
+
+% NOT IMPLEMENTED
+%proof_query_backward_exact_eval(Key,Temp,findall_forward(X,Y,Z),1.0) :-
+%	findall(X,proof_query_backward(Key,Temp,Y),Z),
+%	!.
+
+proof_query_backward_exact_eval(Key,List,[],\+A,1.0) :-
+	user:builtin(A),
+	!,
+	\+user:A.
+		
+proof_query_backward_exact_eval(Key,List,[],A,1.0) :-
+%	A\=(\+_),
+	user:builtin(A),
+	!,
+	user:A.
+
+proof_query_backward_exact_eval(Key,List,Newvars,\+A,1.0) :-
+	\+proof_query_backward_exact(Key,List,Newvars,A),!.
+
+%proof_query_backward_exact_eval(Key,List,Newvars,\+A,0.0) :-
+%	proof_query_backward_exact(Key,List,Newvars,A).
+
+proof_query_backward_exact_eval(Key,List,[],A,1.0) :-
+	ground(A),
+	A\=(\+_),
+	recorded(Key,A,_),
+	!.
+
+proof_query_backward_exact_eval(Key,List,[],A,1.0) :-
+	ground(A),
+	A\=(\+_),
+	memberchk(A,List),%recorded(Temp,A,_),
+	!.
+
+proof_query_backward_exact_eval(Key,List,[],A,1.0) :-
+	A\=(\+_),
+	recorded(Key,A,_).
+	
+proof_query_backward_exact_eval(Key,List,[],A,1.0) :-
+	A\=(\+_),
+	member(A,List).%recorded(Temp,A,_).
+
+proof_query_backward_exact_eval(Key,List,[Head ~= Var|Newvars],Head ~= Var,W) :-
+	user:distributionalclause(Head,Distribution,Body,_),
+	(
+	 	proof_query_backward_exact_eval(Key,List,Newvars,Body,Wold),
+	 	append([List,Newvars],List2),
+		%ground(Head),
+		ground(Distribution),
+		%ground(Body),
+		(
+			ground(Head ~= Var) ->
+			(
+				\+recorded(Key,Head ~= _,_),
+				\+member(Head ~= _,List2),%\+recorded(Temp,Head ~= _,_),
+				likelihood_weighting(Var,Distribution,W1)%,
+				%recorda(Temp,Head ~= Var,_)
+			)
+			;
+			(
+				\+recorded(Key,Head ~= _,_),
+				\+member(Head ~= _,List2),%\+recorded(Temp,Head ~= _,_),
+				exactsampling(Distribution,Var,W1)%, sample(Distribution,Var),
+				%recorda(Temp,Head ~= Var,_),
+				%W=1.0
+			)
+		)
+	),
+	W is Wold*W1.
+/*
+proof_query_backward_exact_eval(Key,List,[Head ~= Var|Newvars],Head ~= Var,W) :-
+	recorded(global,distributionalclause(Head,Distribution,Body,_),_),
+	(
+	 	proof_query_backward_exact(Key,List,Newvars,Body),
+	 	append([List,Newvars],List2),
+		%ground(Head),
+		ground(Distribution),
+		%ground(Body),
+		(
+			ground(Head ~= Var) ->
+			(
+				\+recorded(Key,Head ~= _,_),
+				\+member(Head ~= _,List2),%\+recorded(Temp,Head ~= _,_),
+				likelihood_weighting(Var,Distribution,W)%,
+				%recorda(Temp,Head ~= Var,_)
+			)
+			;
+			(
+				\+recorded(Key,Head ~= _,_),
+				\+member(Head ~= _,List2),%\+recorded(Temp,Head ~= _,_),
+				sample(Distribution,Var),
+				%recorda(Temp,Head ~= Var,_),
+				W=1.0
+			)
+		)
+	).
+*/
+proof_query_backward_exact_eval(Key,List,[Head|Newvars],Head,W) :-
+	Head\= _ ~= _,
+	user:hardclause(Head,Body,_),
+	proof_query_backward_exact_eval(Key,List,Newvars,Body,W),
+	ground(Head),
+	\+recorded(Key,Head,_),
+	append([List,Newvars],List2),
+	\+member(Head,List2).%\+recorded(Temp,Head,_),
+	%recorda(Temp,Head,_).
+
+check_evidence_backward_exact(Key,List,Newvars,Wtot) :-
+	findall(H,user:evidence(H,1),L),
+	check_evidence_proof_exact(Key,List,Newvars,L,Wtot).
+
+check_evidence_proof_exact(Key,List,[],[],1.0) :- !.
+
+check_evidence_proof_exact(Key,List,Newvars3,[H|ListEvidence],W) :-
+	proof_query_backward_exact_eval(Key,List,Newvars,H,W1),
+	append([List,Newvars],List2),
+	check_evidence_proof_exact(Key,List2,Newvars2,ListEvidence,W2),
+	append([Newvars,Newvars2],Newvars3),
+	W is W1*W2.
+%%% end exact %%%
+
+% New inference
+% it works if there is one proof for each variable
+eval_query_backward_exp(PosEvidence,NegEvidence,Query,N,P,Succ_Sum,Sum) :-
+	%magic,
+	get_max_priority(MaxP),
+	retractall(user:evidence(_,_)),
+	assert_evidence(PosEvidence,1),
+	assert_evidence(NegEvidence,0),
+	bb_put(sample_sum,0.0),
+	bb_put(succeeding_sample_sum,0.0),
+	(
+		between(1,N,I),
+		clean_sample(sampled),
+		abolish_all_tables,
+		check_evidence_backward_exp(sampled,[],Newvars,W1),
+		check_evidence_exp(sampled,Newvars,PosEvidence,NegEvidence),
+		W1>0,
+		%write('Sampled E '),writeln(Newvars),
+		bb_get(sample_sum,Old_Sum),
+		New_Sum is Old_Sum + W1,
+		bb_put(sample_sum,New_Sum),
+		(
+			proof_query_backward_exp_eval(sampled,Newvars,Newvars2,Query,W2)
+			->
+			(
+				%write('Sampled Q '),writeln(Newvars2),
+				%write('ok w: '),
+				%check_evidence(sampled,PosEvidence,NegEvidence),
+				%write(Query),nl,
+				bb_get(succeeding_sample_sum,Old),
+				New is Old+W1*W2,
+				%writeln(New),
+				bb_put(succeeding_sample_sum,New)
+			)
+			;
+		  	true
+		),		  	
+		ps,
+		
+		fail;
+
+		true
+	),
+	%clean_sample(sampled),
+	bb_delete(sample_sum,Sum),
+	bb_delete(succeeding_sample_sum,Succ_Sum),
+	P is Succ_Sum/Sum,
+	retractall(user:evidence(_,_)),
+	!.
+
+eval_query_backward_exact(PosEvidence,NegEvidence,Query,N,P,Succ_Sum,Sum) :-
+	%magic,
+	get_max_priority(MaxP),
+	retractall(user:evidence(_,_)),
+	assert_evidence(PosEvidence,1),
+	assert_evidence(NegEvidence,0),
+	bb_put(sample_sum,0.0),
+	bb_put(succeeding_sample_sum,0.0),
+	bb_put(succeeding_proofs,0),
+	(
+		%between(1,N,I),
+		clean_sample(sampled),
+		abolish_all_tables,
+		
+		check_evidence_backward_exact(sampled,[],Newvars,W1),
+		check_evidence_exp(sampled,Newvars,PosEvidence,NegEvidence),
+		W1>0,
+		
+		bb_get(sample_sum,Old_Sum),
+		New_Sum is Old_Sum + W1,
+		bb_put(sample_sum,New_Sum),
+		
+		
+		%write(W1),write(' Evidence Sampled '),writeln(Newvars),
+		
+		proof_query_backward_exact_eval(sampled,Newvars,Newvars2,Query,W2),
+		bb_get(succeeding_sample_sum,Old),
+		New is Old+W1*W2,
+		%writeln(New is Old+W1*W2),
+		bb_put(succeeding_sample_sum,New),	
+		
+		bb_get(succeeding_proofs,OldC),
+		C is OldC+1,
+		bb_put(succeeding_proofs,C),
+		
+		append([Newvars,Newvars2],Un),
+		TempP is New/New_Sum,
+		write(TempP),write(' Sampled '),writeln(Un),
+		
+		(C<N ->
+			fail;
+			true
+		);
+
+		true
+	),
+	%clean_sample(sampled),
+	bb_delete(sample_sum,Sum),
+	bb_delete(succeeding_sample_sum,Succ_Sum),
+	P is Succ_Sum/Sum,
+	retractall(user:evidence(_,_)),
+	!.
+
+eval_query_backward_exact_distrib(PosEvidence,NegEvidence,X,Query,N,Distr) :-
+	%magic,
+	get_max_priority(MaxP),
+	retractall(user:evidence(_,_)),
+	assert_evidence(PosEvidence,1),
+	assert_evidence(NegEvidence,0),
+	bb_put(sample_sum,0.0),
+	bb_put(succeeding_sample_sum,[]),
+	bb_put(succeeding_proofs,0),
+	(
+		%between(1,N,I),
+		clean_sample(sampled),
+		abolish_all_tables,
+		
+		check_evidence_backward_exact(sampled,[],Newvars,W1),
+		check_evidence_exp(sampled,Newvars,PosEvidence,NegEvidence),
+		W1>0,
+		
+		bb_get(sample_sum,Old_Sum),
+		New_Sum is Old_Sum + W1,
+		bb_put(sample_sum,New_Sum),
+		
+		
+		%write(W1),write(' Evidence Sampled '),writeln(Newvars),
+		
+		proof_query_backward_exact_eval(sampled,Newvars,Newvars2,Query,W2),
+		bb_get(succeeding_sample_sum,OldD),
+		
+		sum_distrib(finite(OldD),finite([W1:X]),W2,finite(NewD)),
+		%write(NewD),nl,
+		bb_put(succeeding_sample_sum,NewD),
+		
+		bb_get(succeeding_proofs,OldC),
+		C is OldC+1,
+		bb_put(succeeding_proofs,C),
+		
+		append([Newvars,Newvars2],Un),
+		%write(' Sampled '),writeln(Un),
+		
+		(C<N ->
+			fail;
+			true
+		);
+
+		true
+	),
+
+	bb_delete(succeeding_sample_sum,SUCC),
+	bb_delete(sample_sum,TOT),
+	(
+		SUCC==[] ->
+		Distr=[]
+		;
+		divideby(SUCC,TOT,Distr)
+	),
+	retractall(user:evidence(_,_)),
+	!.
+	
+eval_query_backward_distrib(PosEvidence,NegEvidence,X,Query,N,Distr) :-
+	%magic,
+	get_max_priority(MaxP),
+	retractall(user:evidence(_,_)),
+	assert_evidence(PosEvidence,1),
+	assert_evidence(NegEvidence,0),
+	bb_put(sample_sum,0.0),
+	bb_put(succeeding_sample_sum,[]),
+	(
+		between(1,N,I),
+		clean_sample(sampled),
+		abolish_all_tables,
+		check_evidence_backward(sampled,W1),
+		check_evidence(sampled,PosEvidence,NegEvidence),
+		W1>0,
+		%write('Sampled E '),writeln(Newvars),
+		bb_get(sample_sum,Old_Sum),
+		New_Sum is Old_Sum + W1,
+		bb_put(sample_sum,New_Sum),
+		(
+			proof_query_backward(sampled,Query)
+			->
+			(
+				%write('Sampled Q '),writeln(Newvars2),
+				%write('ok w: '),
+				%check_evidence(sampled,PosEvidence,NegEvidence),
+				%write(Query),nl,
+								
+				bb_get(succeeding_sample_sum,Old),
+				sum_distrib(finite(Old),finite([W1:X]),1.0,finite(New)),
+				%write((List,Weight,New)),nl,
+				bb_put(succeeding_sample_sum,New)
+			)
+			;
+		  	true
+		),		  	
+		%ps,
+		
+		fail;
+
+		true
+	),
+	%clean_sample(sampled),
+	bb_delete(succeeding_sample_sum,SUCC),
+	bb_delete(sample_sum,TOT),
+	(
+		SUCC==[] ->
+		Distr=[]
+		;
+		divideby(SUCC,TOT,Distr)
+	),
+	retractall(user:evidence(_,_)),
+	!.
+	
+% NOT COMPLETE
+eval_query_backward_exp_distrib(PosEvidence,NegEvidence,X,Query,N,Distr) :-
+	%magic,
+	get_max_priority(MaxP),
+	retractall(user:evidence(_,_)),
+	assert_evidence(PosEvidence,1),
+	assert_evidence(NegEvidence,0),
+	bb_put(sample_sum,0.0),
+	bb_put(succeeding_sample_sum,[]),
+	(
+		between(1,N,I),
+		clean_sample(sampled),
+		abolish_all_tables,
+		check_evidence_backward_exp(sampled,[],Newvars,W1),
+		check_evidence_exp(sampled,Newvars,PosEvidence,NegEvidence),
+		W1>0,
+		%write('Sampled E '),writeln(Newvars),
+		bb_get(sample_sum,Old_Sum),
+		New_Sum is Old_Sum + W1,
+		bb_put(sample_sum,New_Sum),
+		(
+			proof_query_backward_exp_eval(sampled,Newvars,Newvars2,Query,W2)
+			->
+			(
+				%write('Sampled Q '),writeln(Newvars2),
+				%write('ok w: '),
+				%check_evidence(sampled,PosEvidence,NegEvidence),
+				%write(Query),nl,
+								
+				bb_get(succeeding_sample_sum,Old),
+				Weight is W1*W2,
+				sum_distrib(finite(Old),finite([Weight:X]),1.0,finite(New)),
+				%write((List,Weight,New)),nl,
+				bb_put(succeeding_sample_sum,New)
+			)
+			;
+		  	true
+		),		  	
+		%ps,
+		
+		fail;
+
+		true
+	),
+	%clean_sample(sampled),
+	bb_delete(succeeding_sample_sum,SUCC),
+	bb_delete(sample_sum,TOT),
+	(
+		SUCC==[] ->
+		Distr=[]
+		;
+		divideby(SUCC,TOT,Distr)
+	),
+	retractall(user:evidence(_,_)),
+	!.
+	
+
+
+proof_query_backward_likelihood(Key,true,1.0,[]) :-
+	!.
+	
+proof_query_backward_likelihood(Key,(A,B),W,NewList) :-
+	!,
+	proof_query_backward_likelihood(Key,A,W1,L1),
+	proof_query_backward_likelihood(Key,B,W2,L2),
+	append([L1,L2],NewList),
+	W is W2*W1.
+
+	
+% INCOMPLETE put union of the list!
+proof_query_backward_likelihood(Key,findall_forward(X,Y,Z),W,[]) :-
+	findall(WI:X,proof_query_backward_likelihood(Key,Y,WI,LI),ZW),
+	writeln('INCOMPLETE put union of the list!'),halt,
+	product_wlist(ZW,Z,W),
+	!.
+
+
+
+proof_query_backward_likelihood(Key,\+A,1.0,[]) :-
+	user:builtin(A),
+	!,
+	\+user:A.
+		
+proof_query_backward_likelihood(Key,A,1.0,[]) :-
+%	A\=(\+_),
+	user:builtin(A),
+	!,
+	user:A.
+
+% W not reliable!
+proof_query_backward_likelihood(Key,\+A,1,[\+A]) :-
+	\+proof_query_backward_likelihood(Key,A,W1,L),
+	!.
+
+proof_query_backward_likelihood(Key,A,1.0,[A]) :-
+	ground(A),
+	recorded(Key,A,_),
+	!.
+
+proof_query_backward_likelihood(Key,A,1.0,[A]) :-
+	recorded(Key,A,_).
+
+proof_query_backward_likelihood(Key,Head ~= Val,W,[(Head ~= Val,L)]) :-
+	tabling_proof_query_backward_likelihood(Key,Head,Distribution,W1,L),
+	ground(Head),
+	ground(Distribution),
+	\+recorded(Key,Head ~= _,_),
+	sample(Distribution,Var),
+	likelihood_weighting(Var,Distribution,W2),
+	recorda(Key,Head ~= Var,_),
+	Var=Val,
+	W is W1*W2.
+
+proof_query_backward_likelihood(Key,Head,W,[(Head,L)]) :-
+	Head\=(_ ~= _),
+	tabling_proof_query_backward_likelihood(Key,Head,W,L),	
+	ground(Head),
+	\+recorded(Key,Head,_),
+	recorda(Key,Head,_).
+
+
+tabling_proof_query_backward_likelihood(Key,Head,Distribution,W,L) :-
+	user:distributionalclause(Head,Distribution,Body,_),
+ 	proof_query_backward_likelihood(Key,Body,W,L).
+
+	
+tabling_proof_query_backward_likelihood(Key,Head,W,L) :-
+	user:hardclause(Head,Body,_),
+	proof_query_backward_likelihood(Key,Body,W,L).
+
+
+proof_query_backward_likelihood(Key,Head ~= Val,W,[(Head ~= Val,L)]) :-
+	recorded(global,distributionalclause(Head,Distribution,Body,_),_),
+ 	proof_query_backward_likelihood(Key,Body,W1,L),
+	ground(Head),
+	ground(Distribution),
+	\+recorded(Key,Head ~= _,_),
+	sample(Distribution,Var),
+	likelihood_weighting(Var,Distribution,W2),
+	recorda(Key,Head ~= Var,_),
+	Var=Val,
+	W is W1*W2.
+
+
+/*
+
+test blockworld:
+init_particle([observation(on(6,5))~= true,observation(on(3,2))~= true,observation(on(2,1))~= true,observation(on(1,table))~= true,observation(on(4,table))~= true,observation(clear(3))~= true,observation(on(5,4))~= true,observation(clear(6))~= true],1).
+dcpf:step_particle1([action(move(6,table))],[],[],1,1).
+distributionalclause:partialproof(1,next(on(6,table)),L).
+distributionalclause:partialproof(1,(next(on(2,1)),next(on(6,table))),L).
+distributionalclause:proof_query_backward(1,current(reward)~=A),!.
+distributionalclause:partialproof(1,(next(on(2,1)),next(on(6,table)),current(reward)~= -1),L),!.
+printp(1).
+distributionalclause:partialproof(1,\+next(on(6,5)),L).
+distributionalclause:partialproof(1,\+ reward ~= _,L).
+
+*/
+% partial proof
+
+
+partialproof(Key,A,ListClean3) :-
+	abolish_all_tables,
+	partialproof_query_backward(Key,A,List),
+%	writeln(List),
+	cleanformula(List,ListClean),
+	
+	partialproof_removetrue(Key,ListClean,ListClean2,True),
+%	writeln(ListClean2),
+%	writeln(True),
+	flatten(True,TrueList),
+%	writeln(TrueList),
+	remove_duplicates(TrueList, TrueList2),
+	test_to_list(TruePruned,TrueList2),
+%	writeln(TruePruned),
+%	writeln(ListClean2),nl,
+
+	cleanformula2((TruePruned,ListClean2),ListClean3).
+
+partialproof2(Key,A,ListClean3) :-
+	abolish_all_tables,
+
+	partialproof_det(Key,A,List),
+	
+	cleanformula(List,ListClean),
+	
+	partialproof_removetrue(Key,ListClean,ListClean2,True),
+	writeln(l(ListClean2)),
+%	writeln(True),
+	flatten(True,TrueList),
+	writeln(t(TrueList)),
+	remove_duplicates(TrueList, TrueList2),
+	test_to_list(TruePruned,TrueList2),
+
+	cleanformula2((TruePruned,ListClean2),ListClean3).
+
+regressionproof(Key,Reward,NextState,ListClean3) :-
+	abolish_all_tables,
+	partialproof_det(Key,Reward,ListReward),
+	partialproof_query_backward(Key,NextState,ListNextState),
+	cleanformula((ListReward,ListNextState),ListClean),
+%	writeln((ListReward,ListNextState)),
+	partialproof_removetrue(Key,ListClean,ListClean2,True),
+	
+	flatten(True,TrueList),
+	remove_duplicates(TrueList, TrueList2),
+	test_to_list(TruePruned,TrueList2),
+%	writeln((TruePruned,ListClean2)),
+	cleanformula2((TruePruned,ListClean2),ListClean3).
+
+partialproof3(Key,A,ListClean3) :-
+	abolish_all_tables,
+
+	partialproof_det(Key,A,List), % regression over deterministic proof
+	
+	cleanformula(List,ListClean),
+	partialproof_true(Key,ListClean,_,True2),
+	flatten(True2,TrueList2),
+	remove_duplicates(TrueList2, TrueList3),
+	partialproof_removetrue2(Key,ListClean,ListClean2,TrueList3),
+%	writeln(l(ListClean2)),
+%	writeln(True),
+	flatten(TrueList3,TrueList4),
+%	writeln(t(TrueList4)),
+	remove_duplicates(TrueList4, TrueList5),
+	test_to_list(TruePruned,TrueList5),
+
+	cleanformula2((TruePruned,ListClean2),ListClean3).	
+	
+regressionproof3(Key,Reward,NextState,ListClean3) :-
+	abolish_all_tables,
+	partialproof_query_backward(Key,NextState,ListNextState),
+%	writeln(nextstate(Key,NextState,ListNextState)),
+	cleanformula(ListNextState,ListNextState1),
+%	writeln(cleanformula(ListNextState,ListNextState1)),
+	partialproof_true(Key,ListNextState1,_,TrueNext),
+	flatten(TrueNext,TrueNextList),
+	remove_duplicates(TrueNextList, TrueNextList2),%trace,
+%	writeln(trueNextList(TrueNextList2)),
+	partialproof_det(Key,Reward,ListReward,TrueNextList2),
+%	writeln(partialproof_det(Key,Reward,ListReward,TrueNextList2)),
+	
+	cleanformula((ListReward,ListNextState),ListClean),
+
+	partialproof_true(Key,ListClean,_,True2),
+	flatten(True2,TrueList2),
+	remove_duplicates(TrueList2, TrueList3),
+%	writeln(ListClean),nl,
+%	writeln(beforetrue2(ListClean)),
+	partialproof_removetrue2(Key,ListClean,ListClean2,TrueList3),
+%	writeln(partialproof_removetrue2(Key,ListClean,ListClean2,TrueList3)),
+	test_to_list(TrueList4,TrueList3),
+%	writeln(beforefinal(TrueList4,ListClean2)),
+	cleanformula2((TrueList4,ListClean2),ListClean3).
+%	writeln(final(ListClean3)),nl.
+/*
+	flatten(True,TrueList),
+	remove_duplicates(TrueList, TrueList2),
+	test_to_list(TruePruned,TrueList2),
+	cleanformula2((TruePruned,ListClean2),ListClean3).*/
+	
+cleanformula2(L1,L3) :-
+	cleanformula(L1,L2),
+	(
+	L1==L2 ->
+	L3=L2
+	;
+	cleanformula2(L2,L3)
+	).
+
+%flt([],[],[]) :-!.
+% flt([],B,B) :-!.
+% flt(A,[],A) :-!.
+
+flt(true,B,B) :-!.
+flt(A,true,A) :-!.
+flt(false,B,false) :-!.
+flt(A,false,false) :-!.
+flt(A,B,A) :- A==B,!.
+flt([A],B,(A,B)) :-!.
+flt(A,[B],(A,B)) :-!.
+flt(A,B,(A,B)) :-!.
+
+current2next(Key,current(A),next(A)) :- !.
+current2next(Key,current(A) ~= V,next(A) ~= V) :- !.
+/*
+current2next(Key,next(A),true)     :-  recorded(Key,next(A),_),!.
+current2next(Key,next(A)~=V,true)  :-  recorded(Key,next(A)~=V,_),!.
+current2next(Key,next(A),false)    :- \+recorded(Key,next(A),_),!.
+current2next(Key,next(A)~=V,false) :- \+recorded(Key,next(A)~=V,_),!.
+*/
+current2next(Key,\+A,\+AA) :- current2next(Key,A,AA),!.
+current2next(Key,(A,B),(AA,BB)) :-
+	!,
+	current2next(Key,A,AA),
+	current2next(Key,B,BB).
+
+current2next(Key,[A|B],[AA|BB]) :-
+	!,
+	current2next(Key,A,AA),
+	current2next(Key,B,BB).
+	
+current2next(Key,A,A) :- !.
+	
+	
+	
+cleanformula((A,B),NewList) :-
+	!,
+	cleanformula(A,AA),
+	cleanformula(B,BB),
+	flt(AA,BB,NewList).
+
+%cleanformula([[],[]],[]) :-
+%	!.
+
+cleanformula([A| [false] ],AA) :-
+	cleanformula(A,AA),!.
+	
+cleanformula([false| A ],AA) :-
+	cleanformula(A,AA),!.
+		
+
+
+cleanformula([[]|A],AA) :- 
+	cleanformula(A,AA),!.
+
+cleanformula(\+ \+ A,AA) :- 
+	cleanformula(A,AA),!.
+	
+cleanformula(\+[],true) :- !.
+cleanformula(\+false,true) :- !.
+cleanformula(\+true,false) :- !.
+
+cleanformula(\+[false|B],BB) :- 
+	cleanformula(\+B,BB),!.
+
+cleanformula(\+[B|[false]],BB) :- 
+	cleanformula(\+B,BB),!.
+	
+cleanformula(\+A,\+ AA) :- 
+	cleanformula(A,AA),!.
+
+cleanformula([A| [[]] ],AA) :-
+	cleanformula(A,AA),!.
+	
+cleanformula([A|B],[AA|BB]) :-
+	cleanformula(A,AA),
+	cleanformula(B,BB),!.
+	
+cleanformula(A,A) :- !.
+
+
+partialproof_query_backward(Key,true,true) :-
+	!.
+	
+partialproof_query_backward(Key,(A,B),NewList) :-
+	!,
+	partialproof_query_backward(Key,A,L1),
+	partialproof_query_backward(Key,B,L2),
+	flt(L1,L2,NewList).
+
+
+% INCOMPLETE put union of the list!
+partialproof_query_backward(Key,findall_forward(X,Y,Z),true) :-
+%	findall(X,partialproof_query_backward(Key,Y,LI),Z),
+	writeln('INCOMPLETE put union of the list!'),halt,
+	!.
+
+
+
+partialproof_query_backward(Key,\+A,true) :-
+	user:builtin(A),
+	!,
+	\+user:A.
+		
+partialproof_query_backward(Key,A,true) :-
+%	A\=(\+_),
+	user:builtin(A),
+	!,
+	user:A.
+
+partialproof_query_backward(Key,\+A,\+ L) :-
+	\+recorded(Key,A,_),
+%	trace,writeln(A),
+	partialproof_negation(Key,A,AA),
+	partialproof_removetrue(Key,AA,L,True1),
+	!.
+
+partialproof_query_backward(Key,A ~= V,ProofA) :-
+	recorded(Key,A ~= V,_),
+	((tabling_partialproof_query_backward(Key,A,D,ProofA),likelihood_weighting(V,D,WVal),WVal>0)->true;ProofA= (A ~= V) ).
+
+partialproof_query_backward(Key,A,ProofA) :-
+	recorded(Key,A,_),
+	A\=(_ ~= _),
+	(tabling_partialproof_query_backward(Key,A,ProofA)->true;ProofA=A).
+
+
+tabling_partialproof_query_backward(Key,Head,Distribution,L) :-
+	user:distributionalclause(Head,Distribution,Body,_),
+	query_proof(Key,Body),
+ 	partialproof_query_backward(Key,Body,L).
+
+	
+tabling_partialproof_query_backward(Key,Head,L) :-
+	user:hardclause(Head,Body,_),
+	query_proof(Key,Body),
+	partialproof_query_backward(Key,Body,L).
+
+
+% proof for reward, regression over deterministic proof
+partialproof_det(Key,true,true) :-
+	!.
+	
+partialproof_det(Key,(A,B),NewList) :-
+	!,
+	partialproof_det(Key,A,L1),
+	partialproof_det(Key,B,L2),
+	flt(L1,L2,NewList).
+
+partialproof_det(Key,\+A,true) :-
+	user:builtin(A),
+	!,
+	\+user:A.
+		
+partialproof_det(Key,A,true) :-
+%	A\=(\+_),
+	user:builtin(A),
+	!,
+	user:A.
+
+partialproof_det(Key,\+A,\+L) :-
+	\+query_proof(Key,A),
+	partialproof_negation(Key,A,AA),
+	partialproof_removetrue(Key,AA,L,True1).
+
+partialproof_det(Key,A ~= V,ProofA) :-
+	recorded(Key,A ~= V,_),
+	((tabling_partialproof_det(Key,A,D,ProofA),likelihood_weighting(V,D,WVal),WVal is 1.0)->true;ProofA= (A ~= V) ).
+
+partialproof_det(Key,A,ProofA) :-
+	recorded(Key,A,_),
+	A\=(_ ~= _),
+	(tabling_partialproof_det(Key,A,ProofA)->true;ProofA=A).
+
+
+tabling_partialproof_det(Key,Head,Distribution,L) :-
+	findall(Body,(user:distributionalclause(Head,Distribution,Body,_),
+			query_proof(Key,Body)),ListB),
+	sample(uniform(ListB),Body),
+%	writeln(sample(uniform(ListB),Body)),trace,
+ 	partialproof_det(Key,Body,L).
+
+	
+tabling_partialproof_det(Key,Head,L) :-
+	findall(Body,(user:hardclause(Head,Body,_),
+			query_proof(Key,Body)),ListB),
+	sample(uniform(ListB),Body),
+	partialproof_det(Key,Body,L).
+
+% ------------------
+
+partialproof_det(Key,true,true,TrueList) :-
+	!.
+	
+partialproof_det(Key,(A,B),NewList,TrueList) :-
+	!,
+	partialproof_det(Key,A,L1,TrueList),
+	partialproof_det(Key,B,L2,TrueList),
+	flt(L1,L2,NewList).
+
+partialproof_det(Key,A,true,TrueList) :-
+	member(A,TrueList).
+
+partialproof_det(Key,\+A,true,TrueList) :-
+	user:builtin(A),
+	!,
+	\+user:A.
+		
+partialproof_det(Key,A,true,TrueList) :-
+%	A\=(\+_),
+	user:builtin(A),
+	!,
+	user:A.
+
+partialproof_det(Key,\+A,\+L,TrueList) :-
+	\+query_proof(Key,A),
+	partialproof_negation(Key,A,AA),
+	partialproof_removetrue(Key,AA,L,True1).
+
+partialproof_det(Key,A ~= V,ProofA,TrueList) :-
+	recorded(Key,A ~= V,_),\+member(A ~= V,TrueList),
+	((tabling_partialproof_det2(Key,A,D,ProofA,TrueList),likelihood_weighting(V,D,WVal),WVal is 1.0)->true;ProofA= (A ~= V) ).
+
+partialproof_det(Key,A,ProofA,TrueList) :-
+	recorded(Key,A,_),\+member(A,TrueList),
+	A\=(_ ~= _),
+	(tabling_partialproof_det2(Key,A,ProofA,TrueList)->true;ProofA=A).
+
+
+tabling_partialproof_det2(Key,Head,Distribution,L,TrueList) :-
+	findall(Body,(user:distributionalclause(Head,Distribution,Body,_),
+			query_proof(Key,Body)),ListB),
+	sample(uniform(ListB),Body),
+ 	partialproof_det(Key,Body,L,TrueList).
+
+	
+tabling_partialproof_det2(Key,Head,L,TrueList) :-
+	findall(Body,(user:hardclause(Head,Body,_),
+			query_proof(Key,Body)),ListB),
+	sample(uniform(ListB),Body),
+	partialproof_det(Key,Body,L,TrueList).
+
+
+% -----
+
+% partialproof_removetrue
+
+partialproof_removetrue(Key,true,true,true) :-
+	!.
+partialproof_removetrue(Key,[],[],[]) :-
+	!.	
+partialproof_removetrue(Key,(A,B),NewList,[True1,True2]) :-
+	!,
+	partialproof_removetrue(Key,A,L1,True1),
+	partialproof_removetrue(Key,B,L2,True2),
+	flt(L1,L2,NewList).
+
+partialproof_removetrue(Key,[A|B],[L1|L2],[True1|True2]) :-
+	!,
+	partialproof_removetrue(Key,A,L1,True1),
+	partialproof_removetrue(Key,B,L2,True2).
+	
+partialproof_removetrue(Key,\+A,\+L,True) :-
+	partialproof_removetrue(Key,A,L,True),!.
+
+partialproof_removetrue(Key,A,true,B) :-
+	ground(A),
+	recorded(Key,A,_),
+	(A=action(_) -> B=true ; B=A),!.
+
+% not storing random variables with mismatch value.
+partialproof_removetrue(Key,A~=V,false,true) :-
+	ground(A),
+	recorded(Key,A~=V2,_),V\=V2,!.
+
+partialproof_removetrue(Key,A,A,true) :-
+	!.%(\+recorded(Key,A,_);\+ground(A)),!.
+
+
+%% remove atoms in the list True
+partialproof_removetrue2(Key,true,true,_) :-
+	!.
+partialproof_removetrue2(Key,[],[],_) :-
+	!.	
+partialproof_removetrue2(Key,(A,B),NewList,True) :-
+	!,
+	partialproof_removetrue2(Key,A,L1,True),
+	partialproof_removetrue2(Key,B,L2,True),
+	flt(L1,L2,NewList).
+
+partialproof_removetrue2(Key,[A|B],[L1|L2],True) :-
+	!,
+	partialproof_removetrue2(Key,A,L1,True),
+	partialproof_removetrue2(Key,B,L2,True).
+	
+partialproof_removetrue2(Key,\+A,\+L,True) :-
+	partialproof_removetrue2(Key,A,L,True),!.
+
+partialproof_removetrue2(Key,action(A),AA,True) :-
+	(
+	recorded(Key,action(A),_) ->
+	AA=true
+	;
+	AA=false
+	),!.
+
+partialproof_removetrue2(Key,\+action(A),AA,True) :-
+	(
+	recorded(Key,action(A),_) ->
+	AA=false
+	;
+	AA=true
+	),!.
+
+
+partialproof_removetrue2(Key,A,AA,True) :-
+	user:builtin(A),
+	(
+		ground(A)->
+		(
+		user:A -> AA=true;AA=false
+		)
+	;
+		AA=A
+	),
+	!.
+
+partialproof_removetrue2(Key,A,true,True) :-
+	member(A,True),!. % check if ground(A) is needed! 
+
+% not storing random variables with mismatch value.
+partialproof_removetrue2(Key,A~=V,false,True) :-
+	member(A~=V2,True),V\=V2,!.
+
+partialproof_removetrue2(Key,A,A,True) :-
+	\+member(A,True),!.
+
+%% end 2
+
+% what is true
+% partialproof_true
+
+partialproof_true(Key,true,true,true) :-
+	!.
+partialproof_true(Key,[],[],[]) :-
+	!.	
+partialproof_true(Key,(A,B),NewList,[True1,True2]) :-
+	!,
+	partialproof_true(Key,A,L1,True1),
+	partialproof_true(Key,B,L2,True2),
+	flt(L1,L2,NewList).
+
+partialproof_true(Key,[A|B],[L1|L2],[True1|True2]) :-
+	!,
+	partialproof_true(Key,A,L1,True1),
+	partialproof_true(Key,B,L2,True2).
+	
+partialproof_true(Key,\+A,\+A,true) :-
+%	partialproof_true(Key,A,L,True),
+	!.
+
+partialproof_true(Key,action(A),true,true) :-!.
+partialproof_true(Key,\+action(A),true,true) :-!.
+
+partialproof_true(Key,A,AA,B) :-
+	(
+		ground(A) ->
+		(
+			recorded(Key,A,_) ->
+				(AA=A,B=A)
+			;
+				(AA=A,B=true)
+		)
+		;
+		(AA=A,B=true)
+	),!.
+%	copy_term(A,AA),
+%	recorded(Key,A,_),
+%	(A=action(_) -> (AA=true,B=true) ; (AA=A,B=A)),!.% (ground(AA),B=A)),!.
+
+% not storing random variables with mismatch value.
+%partialproof_true(Key,A~=V,false,true) :-
+%	recorded(Key,A~=V2,_),V\=V2,!.
+
+
+partialproof_true(Key,A,AA,true) :-
+	user:builtin(A),
+	(
+		ground(A)->
+		(
+		user:A -> AA=true;AA=false
+		)
+	;
+		AA=A
+	),
+	!.
+
+partialproof_true(Key,A,A,true) :-
+	\+recorded(Key,A,_),!. %;\+ground(A),!.
+
+
+% ---- negation
+
+partialproof_negation(Key,false,false) :-
+	!.
+	
+partialproof_negation(Key,(A,B),NewList) :-
+	!,
+	partialproof_negation(Key,A,L1),
+	partialproof_negation(Key,B,L2),
+	flt(L1,L2,NewList).
+
+
+
+partialproof_negation(Key,\+A,\+ AA) :-
+	user:builtin(A),
+	(
+		ground(A)->
+		(
+		user:A-> AA=true;AA=false
+		)
+	;
+		AA=A
+	),
+	!.%,
+%	\+user:A.
+		
+partialproof_negation(Key,A,AA) :-
+%	A\=(\+_),
+	user:builtin(A),
+	(
+		ground(A)->
+		(
+		user:A-> AA=true;AA=false
+		)
+	;
+		AA=A
+	),
+	!.%,
+%	user:A.
+
+partialproof_negation(Key,A,true) :-
+	ground(A),
+	recorded(Key,A,_),!.
+
+partialproof_negation(Key,\+A,\+ ProofA) :-
+%	recorded(Key,A,_),
+	(partialproof_negation(Key,A,L) -> ProofA=L ; ProofA=A).%findall(L,partialproof_query_backward(Key,A,L),
+
+/*
+partialproof_negation(Key,A,ProofA) :-
+	recorded(Key,A,_),
+	(partialproof_query_backward(Key,A,L) -> ProofA=L ; ProofA=A). % should be add to the true list
+
+partialproof_negation(Key,A ~= V,ProofA) :-
+	recorded(Key,A ~= V2,_),
+	V2\==V,
+	(partialproof_query_backward(Key,A ~= V2,L) -> ProofA=(A ~= V,L) ; ProofA= A ~= V). % should be add to the true list
+*/	
+partialproof_negation(Key,A ~= V,ProofA1) :-
+%	\+recorded(Key,A ~= _,_),
+	copy_term(A ~= V,AA),
+	(
+	(tabling_partialproof_negation(Key,A,D,ProofA),\+query_proof(Key,ProofA)) ->
+	ProofA1=ProofA
+	;
+	(
+%	tabling_partialproof_negation(Key,A,D,ProofA) ->
+%		(ProofA1=true,writeln((Key,AA,ProofA)),nl)
+%	;
+	ProofA1= A ~= V
+	)
+	).
+%	findall(Proof,(tabling_partialproof_negation(Key,A,D,Proof),\+query_proof(Key,Proof)),Lproof),
+%	(Lproof==[]-> ProofA= A ~= V ; (Lproof=[SingleP|_] -> ProofA=SingleP ; Lproof = ProofA) ). % (Lproof==[]-> ProofA= A ~= V ; (Lproof=[SingleP] -> ProofA=SingleP ; Lproof = ProofA) ).
+	
+partialproof_negation(Key,A,ProofA) :-
+%	\+recorded(Key,A,_),
+	A\=(_ ~= _),
+%	(A=action(_) ->
+%	ProofA=false; % eliminate other actions
+	(
+	
+	(tabling_partialproof_negation(Key,A,ProofA),\+query_proof(Key,ProofA)) ->
+	true
+	;
+	ProofA = A
+		%findall(Proof,(tabling_partialproof_negation(Key,A,Proof),\+query_proof(Key,Proof)),Lproof),
+		%(Lproof==[]-> ProofA=A ; (Lproof=[SingleP|_] -> ProofA=SingleP ; Lproof = ProofA) ) % (Lproof==[]-> ProofA=A ; (Lproof=[SingleP] -> ProofA=SingleP ; Lproof = ProofA) )
+	). %(tabling_partialproof_negation(Key,A,ProofA)->true;ProofA=[]).
+
+
+tabling_partialproof_negation(Key,Head,Distribution,L) :-
+	user:distributionalclause(Head,Distribution,Body,_),
+ 	partialproof_negation(Key,Body,L).
+
+	
+tabling_partialproof_negation(Key,Head,L) :-
+	user:hardclause(Head,Body,_),
+	partialproof_negation(Key,Body,L).

@@ -1,14 +1,22 @@
-# Distributional Clauses
+# Distributional Clauses (beta)
 Probabilistic logic language for inference, planning and learning in static and dynamic domains  
 DC: Distributional Clauses for inference in static models  
 DCPF: Distributional Clauses Particle Filter for filtering in dynamic models  
 HYPE: planner for hybrid MDPs based on DCPF (code not yet available)  
 HybRel: planner for hybrid relational MDPs based on DCPF (code not yet available)   
 
+The code is in beta, if you need help or find a bug please write an issue.
+
 ## Prerequisites
-Install Yap prolog (tested on YAP 6.2.3 and [YAP 6.3.3](http://www.dcc.fc.up.pt/~vsc/Yap/yap-6.3.3.tar.gz)), follow [these instructions](http://www.dcc.fc.up.pt/~vsc/Yap/documentation.html#Install) and use these options for configure:
+Install Yap prolog (tested on [YAP 6.3.4](https://github.com/vscosta/yap-6.3/archive/master.zip)), follow these instructions:
 ```
+cd yap-6.3
+mkdir arch
+cd arch
 ../configure --enable-tabling=yes --enable-dynamic-loading
+make
+sudo make install
+sudo make install_library
 ```
 
 Install GSL library, e.g., for Ubuntu:

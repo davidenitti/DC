@@ -38,8 +38,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 %:- style_check(all).
 :- yap_flag(unknown,error).
+:- yap_flag(single_var_warnings,off).
 
-:- module(sampling,[samplefinite/2,checkgoallw/3,betaPdf/4,avgvar/3,listmax/2,variance_wis/5,variance/3,initmap/1,addvaluemap/3,deletemap/1,averagemap/2,weightedaverage/3,finiteweight/3,uniformweight/3,normalgsl/3,setseed/1,sumvector/3,logdirichlet_score/3,logbetafunction/2,dirichlet_score/5,poissonPdf/3,betafunction/3,sample_uniform/3,draw_uniform/2,matrixproduct/4,optimalproposal/7,poisson/2,student/2,studentPdf/3,gamma/3,normal/3,normal2/6,densityGaussian/4,dirichlet/2,gaussian/3,kalman/13,kalmanrao/14,kalmanrao_simplified/9]).
+
+:- module(sampling,[samplefinite/2,checkgoallw/3,betaPdf/4,avgvar/3,listmax/2,variance_wis/5,variance/3,initmap/1,addvaluemap/3,deletemap/1,averagemap/2,weightedaverage/3,finiteweight/3,uniformweight/3,normalgsl/3,setseed/1,sumvector/3,logdirichlet_score/3,logbetafunction/2,dirichlet_score/5,poissonPdf/3,betafunction/3,sample_uniform/3,draw_uniform/2,matrixproduct/4,optimalproposal/7,poisson/2,student/2,studentPdf/3,gammaPdf/4,gamma/3,normal/3,normal2/6,densityGaussian/4,dirichlet/2,dirichletPdf/3,gaussian/3,kalman/13,kalmanrao/14,kalmanrao_simplified/9]).
 
 :- load_foreign_files(['sampling'],[],init_my_predicates).
 
