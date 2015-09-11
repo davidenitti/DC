@@ -53,7 +53,7 @@ Absolute error average g ~ Gaussian(0,0.1): 0.000900261603206224
 % 0.290 CPU in 0.291 seconds ( 99% CPU)
 ```
 ## Tutorials
-# DC tutorial
+### DC tutorial
 A quick DC tutorial is available at [examples/tutorial.pl](https://github.com/davidenitti/DC/blob/master/examples/tutorial.pl)  
 To run the tutorial, execute inside examples: 
 ```
