@@ -1,8 +1,8 @@
 %%% -*- Mode: Prolog; -*-
 
-:- use_module('../distributionalclause.pl').
-:- use_module('../random/sampling.pl').
-:- use_module(library(lists)).
+:- use_module('../distributionalclause.pl'). % load distributional clauses library
+:- use_module('../random/sampling.pl'). % load sampling library
+:- use_module(library(lists)). % load list library (prolog)
 
 :- set_options(default),set_inference(backward(lw)).
 %:- set_debug(true).
