@@ -52,3 +52,4 @@ Absolute error drawn(1) ~= 3: 0.00178948412698662
 Absolute error average g ~ Gaussian(0,0.1): 0.000900261603206224
 % 0.290 CPU in 0.291 seconds ( 99% CPU)
 ```
+
