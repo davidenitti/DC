@@ -37,7 +37,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-:- module(distributionalclause,[experiment_naive/8,experiment_LW/8,experiment_LWnoquery/8,experiment_LW2/8,experiment_LW_eval/8,experiment_LW_evalnoquery/8,diffsquared_multidim/4,test_query/6,query/5,query/7,query/8,eval_query_backward_lw/8,avgvar/3,product_wlist/3,eval_query_distribution_eval/8,eval_query_valuelist/7,eval_query_distribution/8,generate_forward/1,generate_backward/2,true/1,set_lifted/1,lifted/1,raoblackwellisation/1,set_options/1,set_current2nextcopy/1,log_likelihood_weighting/3,prod_scalar_multidim/3,eval_query_backward_exp/7,eval_query_backward_eval/8,eval_query_backward/7,matrixproduct/4,logIndepOptimalProposals/3,indepOptimalProposals/3,optimalproposal/7,set_debug/1,test_to_list/2,proof_query_backward_exp_eval/5,normalize/2,sum_list_multidim/3,divide_multidim/3,query_proof_defineRaoBackward/2,kalmanrao/14,kalmanrao_simplified/9,findmax/2,cleanDistribution/3,product_list/2,query_proof_setRaoBackward/5,sum_distrib/4,multiplyby/3,query_proof_rao/3,proof_query_backward_eval/4,proof_query_backward/3,proof_query_backward/2,timesyntax/2,likelihood_weighting/3,init/0,remove_builtin/2,prova/0,init_query_list/2,get_max_priority/1,derived/1,findManage/2,magic/0,init_query/2,eval_query_step/9,eval_distribution/7,magic_distributionalclause/4,magic_hardclause/0,magic_hardclause/3,magic_set_hard/3,magic_distributionalclause/0,magic_distributionalclause/3,evidence_proof_exists_maybe/1,sample/2,print_all/0,proof_exists_maybe/2,remove_inconsistent_value/5,check_value/2,clean_sample/1,sum_prob/2,divideby/3,normalize/2,assert_evidence/2,sample_lookahead/4, check_evidence/3,cumul/4,genesamplestep/4,generate_sample_pr/3,generate_sample/2,sample/2,query_proof/2,set_inference/1,inference/1,montecarlo/3,montecarlo/4,eval_query/8,eval_query/7,findall_forward/3,proof_query_backward_lazy/2,proof_query_backward_lazy/3,proof_query_backward_lazy_eval/3,proof_query_backward_lazy_eval/4]).
+:- module(distributionalclause,[set_query_propagation/1,experiment_naive/8,experiment_LW/8,experiment_LWnoquery/8,experiment_LW2/8,experiment_LW_eval/8,experiment_LW_evalnoquery/8,diffsquared_multidim/4,test_query/6,query/5,query/7,query/8,eval_query_backward_lw/8,avgvar/3,product_wlist/3,eval_query_distribution_eval/8,eval_query_valuelist/7,eval_query_distribution/8,generate_forward/1,generate_backward/2,generate_backward/3,true/1,set_lifted/1,lifted/1,raoblackwellisation/1,set_options/1,set_current2nextcopy/1,log_likelihood_weighting/3,prod_scalar_multidim/3,eval_query_backward_exp/7,eval_query_backward_eval/8,eval_query_backward/7,matrixproduct/4,logIndepOptimalProposals/3,indepOptimalProposals/3,optimalproposal/7,set_debug/1,test_to_list/2,proof_query_backward_exp_eval/5,normalize/2,sum_list_multidim/3,divide_multidim/3,query_proof_defineRaoBackward/2,kalmanrao/14,kalmanrao_simplified/9,findmax/2,cleanDistribution/3,product_list/2,query_proof_setRaoBackward/5,sum_distrib/4,multiplyby/3,query_proof_rao/3,proof_query_backward_eval/4,proof_query_backward/3,proof_query_backward/2,timesyntax/2,likelihood_weighting/3,init/0,remove_builtin/2,prova/0,init_query_list/2,get_max_priority/1,derived/1,findManage/2,magic/0,init_query/2,eval_query_step/9,eval_distribution/7,magic_distributionalclause/4,magic_hardclause/0,magic_hardclause/3,magic_set_hard/3,magic_distributionalclause/0,magic_distributionalclause/3,evidence_proof_exists_maybe/1,sample/2,print_all/0,proof_exists_maybe/2,remove_inconsistent_value/5,check_value/2,clean_sample/1,sum_prob/2,divideby/3,normalize/2,assert_evidence/2,sample_lookahead/4, check_evidence/3,cumul/4,genesamplestep/4,generate_sample_pr/3,generate_sample/2,sample/2,query_proof/2,set_inference/1,inference/1,montecarlo/3,montecarlo/4,eval_query/8,eval_query/7,findall_forward/3,proof_query_backward_lazy/2,proof_query_backward_lazy/3,proof_query_backward_lazy_eval/3,proof_query_backward_lazy_eval/4]).
 
 :- use_module('random/sampling.pl').
 :- use_module(library(lists)).
@@ -67,12 +67,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 :- op(1100,xfx,user:':=').
 :- op(1101,xfx,user:'pr').
 
-%abolish_all_tables :-!.
-%:- yap_flag(tabling_mode,local).
+abolish_all_tables :-!.
 
 % tabling unstable!
-
 /*
+:- yap_flag(tabling_mode,local).
 :- table	tabling_proof_query_backward/2, tabling_proof_query_backward/3,
 		tabling_proof_query_backward2/2, tabling_proof_query_backward2/3,
 		tabling_proof_query_backward_evidence/2,tabling_proof_query_backward_evidence/3,
@@ -126,7 +125,12 @@ user:builtin(trace) :- !.
 user:builtin(debug) :- !.
 user:builtin(ground(_)) :- !.
 user:builtin(belief(_)) :- !.
-%user:builtin(action(_)) :- !.
+user:builtin(remove_duplicates(_,_)) :- !.
+
+user:satisfiable(between(A,B,_)) :- ground(A),ground(B),A<B.
+user:satisfiable(between(A,B,_)) :- A<B.
+user:satisfiable(ground(_)).
+user:satisfiable(belief(_)).
 
 user:belief(A) :- ground(A),!.
 
@@ -137,11 +141,16 @@ set_options(default) :-
 	set_lifted(false),
 	set_raoblackwellisation(false),
 	set_debug(false),
-	set_current2nextcopy(true).
+	set_current2nextcopy(true),
+	set_query_propagation(false).
 		
 set_inference(V) :-
 	retractall(inference(_)),
 	assert(inference(V)).
+
+set_query_propagation(V) :-
+	retractall(query_propagation(_)),
+	assert(query_propagation(V)).
 
 set_lifted(V) :-
 	retractall(lifted(_)),
@@ -181,9 +190,9 @@ user:term_expansion((H~uniform(A:C) := Body),(H~uniform(Distribution) := Body)) 
 	ground(A:C),
 	findall(X,between(A,C,X),Distribution).
 
-user:term_expansion((H~val(V) := Body),(H~uniform([V]) := Body)).
+% user:term_expansion((H~val(V) := Body),(H~uniform([V]) := Body)).
 
-user:term_expansion((H~val(V)),(H~uniform([V]) := true)).
+% user:term_expansion((H~val(V)),(H~uniform([V]) := true)).
 
 user:term_expansion((H~bool(P) := Body),(H~finite([P:true,Q:false]) := Body)) :- Q is 1-P.
 
@@ -224,6 +233,10 @@ query_proof(Key,(A,B)) :-
 	query_proof(Key,A),
 	query_proof(Key,B).
 
+query_proof(Key,(A;B)) :-
+	!,
+	(query_proof(Key,A);query_proof(Key,B)).
+
 % negation, to check
 query_proof(Key,\+A) :-
 	(
@@ -252,15 +265,15 @@ query_proof(Key,A) :-
 		user:builtin(A)
 		->
 		(
-			A=findall_forward(X,Y,Z)
-			->
-				findall(X,query_proof(Key,Y),Z);
-				user:A
+			user:A
 		)
 		;
 		(
-			
-			recorded(Key,A,_)
+			A=findall_forward(X,Y,Z)
+			->
+				findall(X,query_proof(Key,Y),Z)
+				;
+				recorded(Key,A,_)
 		)
 	).
 
@@ -295,7 +308,7 @@ proof_query_backward(Key,\+A) :-
 
 
 	
-proof_query_backward(Key,A~= Val) :-
+proof_query_backward(Key,A ~= Val) :-
 	ground(A),
 	recorded(Key,A ~= Var,_),
 	!,
@@ -323,8 +336,6 @@ proof_query_backward(Key,findall_forward(X,Y,Z)) :-
 	findall(X,proof_query_backward(Key,Y),Z),
 	!.
 	
-proof_query_backward(Key,A) :-
-	recorded(Key,A,_).
 
 /*
 % to support non-sampled variables H ~= distribution(D) in the particles
@@ -371,9 +382,9 @@ proof_query_backward(Key,Head) :-
 	ground(Head),
 	\+recorded(Key,Head,_),
 	recorda(Key,Head,_).
+	
 
-%proof_query_backward(Key,A) :-
-%	recorded(Key,A,_).
+
 proof_query_backward(Key,Head ~= Val) :-
 	recorded(global,distributionalclause(Head,Distribution,Body,_),_),
  	proof_query_backward(Key,Body),
@@ -383,6 +394,9 @@ proof_query_backward(Key,Head ~= Val) :-
 	sample(Distribution,Var),
 	recorda(Key,Head ~= Var,_),
 	Var=Val.
+	
+proof_query_backward(Key,A) :- % do not move, otherwise tabling might not work properly
+	recorded(Key,A,_).
 	
 tabling_proof_query_backward(Key,Head,Distribution) :-
 	user:distributionalclause(Head,Distribution,Body,_),
@@ -770,6 +784,44 @@ proof_query_backward_clause2(Key,\+A,B,D) :-
 %%% End NEW %%%
 
 
+%%
+proof_query_backward_clause3(Key,true,1,[]) :-
+	!.
+	
+proof_query_backward_clause3(Key,(A,B),W,Body) :-
+	!,
+	proof_query_backward_clause3(Key,A,W1,BodyA),
+	proof_query_backward_clause3(Key,B,W2,BodyB),
+	W is W1*W2,
+	append(BodyA,BodyB,Body).
+
+proof_query_backward_clause3(Key,A,1,[A]) :-
+	user:satisfiable(A),
+	\+ground(A),!.
+
+% todo: add case when ground(Val)
+proof_query_backward_clause3(Key,Head ~= Val,W,B) :-
+	recorded(Key,distributionalclause(Head,finite(Distribution),Body,_),_),
+	member(W1:Val,Distribution),
+ 	proof_query_backward_clause3(Key,Body,W2,B),
+	W is W1*W2.
+
+proof_query_backward_clause3(Key,\+A,1,[]) :-
+	user:builtin(A),
+	!,
+	\+user:A.
+		
+proof_query_backward_clause3(Key,A,1,[]) :-
+%	A\=(\+_),
+	user:builtin(A),
+	!,
+	user:A.	
+
+% TO CHECK
+proof_query_backward_clause3(Key,\+A,B,D,B) :-
+	\+proof_query_backward_clause3(Key,A,B,D,B),!.	
+%%% End NEW %%%
+
 	
 % with a temporary index to store sampled variables
 % don't use Key=Temp!
@@ -787,6 +839,9 @@ proof_query_backward(Key,Temp,(A,B)) :-
 	proof_query_backward(Key,Temp,A),
 	proof_query_backward(Key,Temp,B).
 
+proof_query_backward(Key,Temp,(A;B)) :-
+	!,
+	(proof_query_backward(Key,Temp,A);proof_query_backward(Key,Temp,B)).
 
 % Really slow! sometimes does not find all solutions!
 proof_query_backward(Key,Temp,findall_forward(X,Y,Z)) :-
@@ -1221,7 +1276,7 @@ proof_query_backward_lw(Key,\+A) :-
 
 proof_query_backward_lw(Key,A~= Val) :-
 	ground(A),
-	recorded(Key,A ~= Var,_),
+	recorded(Key,A ~= Var,_), Var\=distribution(_),
 	!,
 	Val=Var.
 
@@ -1237,26 +1292,82 @@ proof_query_backward_lw(Key,findall_forward(X,Y,Z)) :-
 	findall(X,proof_query_backward_lw(Key,Y),Z),
 	!.
 	
-proof_query_backward_lw(Key,A) :-
-	recorded(Key,A,_).
+
+/*
+proof_query_backward_lw(Key,H ~= S) :-
+	ground(H~=S),
+	recorded(Key,H ~= distribution(D),R),
+	sample(D,Val),
+	erase(R),
+	recorda(Key,H ~= Val,_),
+	S=Val,
+	!.
+*/	
+	
+proof_query_backward_lw(Key,Head ~= Val) :-
+	recorded(Key,Head ~= distribution(Distribution),R),
+%	sample(Distribution,Val),
+	erase(R),
+	proof_query_backward_lw_main(Key,Head ~= Val,Distribution).
+
+proof_query_backward_lw(Key,Head ~= Val) :-
+	tabling_proof_query_backward_lw(Key,Head,Distribution,UnifBody),
+%	user:distributionalclause(Head,Distribution,UnifBody,_),
+%	proof_query_backward_lw(Key,UnifBody),
+%	test_to_list(Q,Qlist),
+	ground(Head),
+%	ground(Distribution),
+	
+	\+recorded(Key,Head ~= _,_),
+	proof_query_backward_lw_main(Key,Head ~= Val,Distribution).
 
 
 proof_query_backward_lw(Key,Head ~= Val) :-
-%	tabling_proof_query_backward_lw(Key,Head,Distribution,UnifBody),
-	user:distributionalclause(Head,Distribution,UnifBody,_),
- 	proof_query_backward_lw(Key,UnifBody),
+	recorded(global,distributionalclause(Head,Distribution,Body,_),_),
+%	writeln('totest! proof_query_backward_lw global'),
+%	halt,
 %	test_to_list(Q,Qlist),
+ 	proof_query_backward_lw(Key,Body),
 	ground(Head),
-	ground(Distribution),
+%	ground(Distribution),
 	
 	\+recorded(Key,Head ~= _,_),
+	proof_query_backward_lw_main(Key,Head ~= Val,Distribution).
+
+
+
+proof_query_backward_lw(Key,Head) :-
+	Head\=(_ ~= _),
+	tabling_proof_query_backward_lw(Key,Head,_),
+%	user:hardclause(Head,Body,_),
+%	proof_query_backward_lw(Key,Body),
+	ground(Head),
+	\+recorded(Key,Head,_),
+	recorda(Key,Head,_).
+
+proof_query_backward_lw(Key,A) :- % do not move, otherwise tabling might not work properly
+	recorded(Key,A,_),	A\= _~= distribution(_).
+	
+tabling_proof_query_backward_lw(Key,Head,Distribution,Body) :-
+	user:distributionalclause(Head,Distribution,Body,_),
+ 	proof_query_backward_lw(Key,Body).
+
+	
+tabling_proof_query_backward_lw(Key,Head,Body) :-
+	user:hardclause(Head,Body,_),
+	proof_query_backward_lw(Key,Body).
+
+proof_query_backward_lw_main(Key,Head ~= Val,Distribution) :-
 	bb_get(q,QQ), %writeln(QQ), % todo TO TEST!!!!
+	%QQ\==false,
 %	bb_get(nq,NQQ),
 %	((between(1,NQQ,Pos),arg(Pos,QQ,Elem),unifiable(Head ~= _,Elem,_)) -> 
 	%(nth0(Pos,QQ,Head ~= _) ->
 %	writeln(QQ),
+%	write('q  '),writeln(QQ),writeln(Head ~= Val),
 	(inlist(Head ~= _,QQ,Head2~=Var2,Rest) ->
 	(
+		
 		%bb_get(q,QQ2),
 		%arg(Pos,QQ2,Head2~=Var2),
 		%nth0(Pos,QQ2,Head2~=Var2,Rest),
@@ -1266,13 +1377,18 @@ proof_query_backward_lw(Key,Head ~= Val) :-
 		(
 		%	writeln(InQ= Head ~= Val),
 			Var=Val,
-			Var2=Val,
+			(Var2=Val -> true; (bb_put(q,false),trace,!,fail)),
 			bb_put(q,Rest),
-			likelihood_weighting(Val,Distribution,W),
-			((Distribution=beta(_,_);Distribution=gaussian(_,_))-> ( bb_get(dx,OldDX),DX is OldDX+1, bb_put(dx,DX) );true), % to complete
+			likelihood_weighting(Val,Distribution,W,DistDX),
+%			writeln(likelihood_weighting(Val,Distribution,W)),
+			(DistDX>0-> 
+			( bb_get(dx,OldDX),DX is OldDX+DistDX, bb_put(dx,DX) );true
+			),
 			bb_get(wevidence,Wold),
 			Wnew is Wold*W,
 			bb_put(wevidence,Wnew),
+			%bb_get(dx,NewDX),
+			%writeln(v(Head ~= Val,Head2~=Var2,W,NewDX)),
 			(Wnew>0 -> true; (!,fail))
 			%bb_put(q,QQ2)%
 			%,
@@ -1294,98 +1410,295 @@ proof_query_backward_lw(Key,Head ~= Val) :-
 				true
 			)
 			)
+		),
+		(
+		query_propagation(true) ->
+			(simplify_queryAND(Head,Var,Rest,QQout,0,_),flatten(QQout,QQout1),bb_put(q,QQout1)) %,writeln(q(QQout1))
+		;
+			true
 		)
 	)
 	;
-		sample(Distribution,Var)
+		(
+		sample(Distribution,Var),
+		(
+		query_propagation(true) ->
+			(simplify_queryAND(Head,Var,QQ,QQout,0,_),flatten(QQout,QQout1),bb_put(q,QQout1)) %,writeln(q(QQout1))
+		;
+			true
+		)
+		)
 	),
 
 	recorda(Key,Head ~= Var,_),
+%	writeln(Head ~= Var),
+%	(Head ~= Var = coin~=false ->trace;true),
 	Var=Val.
-
-proof_query_backward_lw(Key,Head) :-
-	Head\=(_ ~= _),
-	%tabling_proof_query_backward_lw(Key,Head,_),
-	user:hardclause(Head,Body,_),
-	proof_query_backward_lw(Key,Body),
-	ground(Head),
-	\+recorded(Key,Head,_),
-	recorda(Key,Head,_).
-/*
-tabling_proof_query_backward_lw(Key,Head,Distribution,Body) :-
-	user:distributionalclause(Head,Distribution,Body,_),
- 	proof_query_backward_lw(Key,Body).
-
 	
-tabling_proof_query_backward_lw(Key,Head,Body) :-
-	user:hardclause(Head,Body,_),
-	proof_query_backward_lw(Key,Body).
-*/
 
-proof_query_backward_lw(Key,Head ~= Val) :-
-	recorded(global,distributionalclause(Head,Distribution,Body,_),_),
-%	writeln('totest! proof_query_backward_lw global'),
-%	halt,
-%	test_to_list(Q,Qlist),
- 	proof_query_backward_lw(Key,Body),
-	ground(Head),
-	ground(Distribution),
+
+
+invertformula(A is B * C) :-
+	ground(A),
+	ground(C),
+	B is A/C,
+	!.
 	
-	\+recorded(Key,Head ~= _,_),
-	bb_get(q,QQ), %writeln(QQ), % todo TO TEST!!!!
-%	bb_get(nq,NQQ),
-	%((between(1,NQQ,Pos),arg(Pos,QQ,Elem),unifiable(Head ~= _,Elem,_)) -> %
-	(inlist(Head ~= _,QQ,Head2~=Var2,Rest) -> %(nth0(Pos,QQ,Head ~= _) ->
+invertformula(A is B * C) :-
+	ground(A),
+	ground(B),
+	C is A/B,!.
+
+%invertformula(A is B * C) :-
+%	halt,trace,fail,!.
+invertformula(A is B) :-
+	ground(B),
+	A is B,!.
+
+invertformula(A=B) :-
+	%(ground(A);ground(B)),
+	B=A,!.
+
+simplify_queryAND(_,_,[],[],_,Full) :-!.
+
+simplify_queryAND(Head,Var,[[H|HH]|T],Out,Level,Full) :-
+	!,
+	flatten([[H|HH]|T],New),
+	%append([H|HH],T,New),
+%	writeln(([[H|HH]|T],New)),
+	simplify_queryAND(Head,Var,New,Out,Level,Full).
+simplify_queryAND(Head,Var,[H|T],Out,Level,Full) :-
+	NL is Level+1,
 	(
-		%bb_get(q,QQ2),
-		%arg(Pos,QQ2,Head2~=Var2),%
-		%nth0(Pos,QQ2,Head2~=Var2,Rest),
-		%Elem= Head2~=Var2,
+		H=(A,B) ->
+			simplify_queryOR(Head,Var,(A,B),Hout,NL,Full)
+		;
 		(
-		(ground(Head2~=Var2))-> % Head and value ground in the original query
-		(
-		%	writeln(InQ= Head ~= Val),
-			Var=Val,
-			Var2=Val,
-			bb_put(q,Rest),
-			likelihood_weighting(Val,Distribution,W),
-			((Distribution=beta(_,_);Distribution=gaussian(_,_))-> ( bb_get(dx,OldDX),DX is OldDX+1, bb_put(dx,DX) );true), % to complete
-			bb_get(wevidence,Wold),
-			Wnew is Wold*W,
-			bb_put(wevidence,Wnew),
-			(Wnew>0 -> true; (!,fail))
-			%,
-			%writeln(lw(Wnew,QQ2,Rest))
+			(H= NV~=V,NV==Head) -> % has to be ground(NV) 
+				(V=Var-> Hout=true;Out=[false])
+				;
+				(
+					(
+						
+						H=findall(_,_,_)-> % ignore findall
+							Hout=true
+						;		
+						(
+						ground(H)->
+							(
+							user:builtin(H) ->
+								(H-> Hout=true;Out=false)
+								;
+								Hout=H
+							)
+							;
+							(
+								(user:builtin(H),Level=0,term_variables(H,VarH),variables_within_term(VarH,Full,[]),invertformula(H))->  %;(term_variables(H,VarH),variables_within_term(VarH,Full,[]))
+								Hout=true
+								;
+								Hout=H
+							)
+						)
+					)
+				/*
+					user:builtin(H) ->
+						(
+						ground(H)->
+							Hout=true
+						;
+						(
+							( H=(Num is Num2*Num3),invertformula(H))->
+							Hout=true
+							;		
+							Hout=H
+						)
+						)
+						;
+						(
+							Hout=H
+						)*/
+				)
 		)
+	),
+	(
+	\+ground(Out)->
+	(
+		simplify_queryAND(Head,Var,T,QQoutT,Level,Full),
+		(
+		Hout==true ->
+			(QQoutT==[]-> Out=[true] ; Out=QQoutT)
 		;
 			(
-			sample(Distribution,Var),
-			(
-			(ground(Head2) )->
-				(
-					Head=Head2,Var=Var2,
-					%writeln(newq(QQ))
-					%setarg(Pos,QQ,null),
-					b_put(q,Rest)%,
-					%writeln(newq(QQ))
-				)
+			(QQoutT==false;QQoutT==[false])->
+				Out=[false]
 			;
-				true
-			)
+				(
+				QQoutT==[true]->
+				Out=[Hout]
+				;
+				Out=[Hout|QQoutT]
+				)
 			)
 		)
 	)
 	;
-		sample(Distribution,Var)
+		true
+	),!.
+	
+simplify_queryOR(Head,Var,(A,B),Out,Level,Full) :-
+	NL is Level+1,
+	simplify_queryAND(Head,Var,A,OutA,NL,Full),
+	(B=(_,_)->
+		simplify_queryOR(Head,Var,B,OutB,NL,Full)
+	;
+		simplify_queryAND(Head,Var,B,OutB,NL,Full)
 	),
+%	(OutA=[OutA2]-> true ; OutA2=OutA),
+	(
+	(OutA==false;OutA==[false]) ->
+		Out=OutB
+		;
+		(
+		(OutB==false;OutB==[false]) ->
+			Out=OutA
+		;
+			((OutA==true;OutB==true;OutA==[true];OutB==[true]) -> Out=true ; Out=(OutA,OutB))
+		)
+	),!.
 
-	recorda(Key,Head ~= Var,_),
-	Var=Val.
 
+simplify_queryANDnot(_,_,[],[],_,Full) :-!.
+
+simplify_queryANDnot(Head,Var,[[H|HH]|T],Out,Level,Full) :-
+	!,
+	flatten([[H|HH]|T],New),
+	%append([H|HH],T,New),
+%	writeln(([[H|HH]|T],New)),
+	simplify_queryANDnot(Head,Var,New,Out,Level,Full).
+simplify_queryANDnot(Head,Var,[H|T],Out,Level,Full) :-
+	NL is Level+1,
+	(
+		H=(A,B) ->
+			simplify_queryORnot(Head,Var,(A,B),Hout,NL,Full)
+		;
+		(
+			(H= NV~=V,NV==Head) -> % has to be ground(NV) 
+				(V\==Var-> Hout=H ; Out=[false])
+				;
+				(
+					(
+						
+						/*H=findall(_,_,_)->
+							Hout=true
+						;*/		
+						(				
+						ground(H)->
+							(
+							user:builtin(H) ->
+								(H-> Hout=true;Out=false)
+								;
+								Hout=H
+							)
+							;
+							(
+								(user:builtin(H),Level=0,term_variables(H,VarH),variables_within_term(VarH,Full,[]),invertformula(H))->  %;(term_variables(H,VarH),variables_within_term(VarH,Full,[]))
+								Hout=true
+								;
+								Hout=H
+							)
+						)
+					)
+				/*
+					user:builtin(H) ->
+						(
+						ground(H)->
+							Hout=true
+						;
+						(
+							( H=(Num is Num2*Num3),invertformula(H))->
+							Hout=true
+							;		
+							Hout=H
+						)
+						)
+						;
+						(
+							Hout=H
+						)*/
+				)
+		)
+	),
+	(
+	\+ground(Out)->
+	(
+		simplify_queryANDnot(Head,Var,T,QQoutT,Level,Full),
+		(
+		Hout==true ->
+			(QQoutT==[]-> Out=[true] ; Out=QQoutT)
+		;
+			(
+			(QQoutT==false;QQoutT==[false])->
+				Out=[false]
+			;
+				(
+				QQoutT==[true]->
+				Out=[Hout]
+				;
+				Out=[Hout|QQoutT]
+				)
+			)
+		)
+	)
+	;
+		true
+	),!.
+	
+simplify_queryORnot(Head,Var,(A,B),Out,Level,Full) :-
+	NL is Level+1,
+	simplify_queryANDnot(Head,Var,A,OutA,NL,Full),
+	(B=(_,_)->
+		simplify_queryORnot(Head,Var,B,OutB,NL,Full)
+	;
+		simplify_queryANDnot(Head,Var,B,OutB,NL,Full)
+	),
+%	(OutA=[OutA2]-> true ; OutA2=OutA),
+	(
+	(OutA==false;OutA==[false]) ->
+		Out=OutB
+		;
+		(
+		(OutB==false;OutB==[false]) ->
+			Out=OutA
+		;
+			((OutA==true;OutB==true;OutA==[true];OutB==[true]) -> Out=true ; Out=(OutA,OutB))
+		)
+	),!.	
+
+simplify_query(Head,Var,Rest,Out) :- 
+	flatten(Rest,Rest1),
+	simplify_queryAND(Head,Var,Rest1,QQout,0,_),flatten(QQout,QQout1),
+	(QQout1\==Rest ->
+	simplify_query(Head,Var,QQout1,Out)
+	;
+	Out=QQout1
+	).
 % end proof_query_backward_lw
 
 inlist(Elem,[F|Rest2],UN,Rest3) :-
-	(unifiable(F,Elem,_)->
+	(unifiable(F,Elem,_) ->
+	(
+		UN=F,
+		Rest3=Rest2
+	)
+	;
+	(
+		inlist(Elem,Rest2,UN,Rest),
+		Rest3=[F|Rest]
+	)
+	),!.
+
+inlist2(Elem,[F|Rest2],UN,Rest3) :-
+	(F==Elem ->
 	(
 		UN=F,
 		Rest3=Rest2
@@ -1396,38 +1709,37 @@ inlist(Elem,[F|Rest2],UN,Rest3) :-
 		Rest3=[F|Rest]
 	)
 	).
-
 %%%% start proof_query_backward_lw_adapt %%%
 
-proof_query_backward_lw_adapt(Key,true,Q) :-
+proof_query_backward_lw_adapt(Key,true) :-
 	!.
 	
-proof_query_backward_lw_adapt(Key,(A,B),Q) :-
+proof_query_backward_lw_adapt(Key,(A,B)) :-
 	!,
-	proof_query_backward_lw_adapt(Key,A,Q),
-	proof_query_backward_lw_adapt(Key,B,Q).
+	proof_query_backward_lw_adapt(Key,A),
+	proof_query_backward_lw_adapt(Key,B).
 
 % to check!	
-proof_query_backward_lw_adapt(Key,findall_forward(X,Y,Z),Q) :-
-	(proof_query_backward_lw_adapt(Key,Y,Q),fail;true), % temporal solution
-	findall(X,proof_query_backward_lw_adapt(Key,Y,Q),Z),
+proof_query_backward_lw_adapt(Key,findall_forward(X,Y,Z)) :-
+	(proof_query_backward_lw_adapt(Key,Y),fail;true), % temporal solution
+	findall(X,proof_query_backward_lw_adapt(Key,Y),Z),
 	!.
 
-proof_query_backward_lw_adapt(Key,\+A,Q) :-
+proof_query_backward_lw_adapt(Key,\+A) :-
 	user:builtin(A),
 	!,
 	\+user:A.
 		
-proof_query_backward_lw_adapt(Key,A,Q) :-
+proof_query_backward_lw_adapt(Key,A) :-
 %	A\=(\+_),
 	user:builtin(A),
 	!,
 	user:A.
 
-proof_query_backward_lw_adapt(Key,\+A,Q) :-
-	\+proof_query_backward_lw_adapt(Key,A,Q),!.	
+proof_query_backward_lw_adapt(Key,\+A) :-
+	\+proof_query_backward_lw_adapt(Key,A),!.	
 
-
+/*
 proof_query_backward_lw_adapt(Key,A,Q) :-
 	ground(A),
 	recorded(Key,A,_),
@@ -1435,112 +1747,101 @@ proof_query_backward_lw_adapt(Key,A,Q) :-
 
 proof_query_backward_lw_adapt(Key,A,Q) :-
 	recorded(Key,A,_).
-
-proof_query_backward_lw_adapt(Key,Head ~= Val,Q) :-
-	tabling_proof_query_backward_lw_adapt(Key,Head,Distribution,Q,UnifBody),
+*/
+proof_query_backward_lw_adapt(Key,A) :-
+	recorded(Key,A,_),
+	A\= _~= distribution(_).
+	
+proof_query_backward_lw_adapt(Key,Head ~= Val) :-
+	recorded(Key,Head ~= distribution(Distribution),R),
+%	sample(Distribution,Val),
+	erase(R),
+	proof_query_backward_lw_adapt_main(Key,Head ~= Val,Distribution).
+	
+proof_query_backward_lw_adapt(Key,Head ~= Val) :-
+	tabling_proof_query_backward_lw_adapt(Key,Head,Distribution,UnifBody),
+%	user:distributionalclause(Head,Distribution,UnifBody,_),
+%	proof_query_backward_lw(Key,UnifBody),
 %	test_to_list(Q,Qlist),
 	ground(Head),
 	ground(Distribution),
+	
 	\+recorded(Key,Head ~= _,_),
-	duplicate_term(Q,CopyQ),
-	(nth0(Pos,CopyQ,Head ~= Var) ->
+	proof_query_backward_lw_adapt_main(Key,Head ~= Val,Distribution).
+
+proof_query_backward_lw_adapt(Key,Head) :-
+	Head\=(_ ~= _),
+	tabling_proof_query_backward_lw_adapt(Key,Head,_),	
+	ground(Head),
+	\+recorded(Key,Head,_),
+	recorda(Key,Head,_).
+
+proof_query_backward_lw_adapt(Key,Head ~= Val) :-
+	recorded(global,distributionalclause(Head,Distribution,Body,_),_),
+%	test_to_list(Q,Qlist),
+ 	proof_query_backward_lw_adapt(Key,Body),
+	ground(Head),
+	ground(Distribution),
+	\+recorded(Key,Head ~= _,_),
+	proof_query_backward_lw_adapt_main(Key,Head ~= Val,Distribution).
+
+tabling_proof_query_backward_lw_adapt(Key,Head,Distribution,Body) :-
+	user:distributionalclause(Head,Distribution,Body,_),
+ 	proof_query_backward_lw_adapt(Key,Body).
+
+	
+tabling_proof_query_backward_lw_adapt(Key,Head,Body) :-
+	user:hardclause(Head,Body,_),
+	proof_query_backward_lw_adapt(Key,Body).
+	
+proof_query_backward_lw_adapt_main(Key,Head ~= Val,Distribution) :-
+	bb_get(q,QQ),
+	(inlist(Head ~= _,QQ,Head2~=Var2,Rest) ->
+	(
 		(
-			((nth0(Pos,Q,HeadQ ~= VarQ),ground(HeadQ~= VarQ),ground(Head ~= Var)) ->
-			(
-				Var=Val,
-				likelihood_weighting(Var,Distribution,W),
-				bb_get(wevidence,Wold),
-				Wnew is Wold*W,
-				bb_put(wevidence,Wnew),
-				WD=1
-			)
-			;
-			(
-				(user:adapt(Head) ->
-					(
-					%trace,
-					
-					(recorded(proposal,localproposal(Head,Distribution,UnifBody,TypeD,PropD),_) ->
-					true ; defaultproposal(Head,UnifBody,TypeD,Distribution,PropD)),
-					(TypeD==finite ->
-					(
-					prod_distrib(Distribution,finite(PropD),ProdNorm) % product between the original distribution and the 
-					
-					)
-					;
-					writeln('not implemened')
-					),
-					
-					sample(ProdNorm,Var),
-					%recorda(Key,Head ~= Var,_),
-					likelihood_weighting(Var,Distribution,WN), % original distribution
-					likelihood_weighting(Var,ProdNorm,WD), % proposal distribution
-									
-					W is WN/WD,
-					%todo compute derivative for finite
-					likelihood_weighting(Var,finite(PropD),ParamF),
-					RelDer is 1/ParamF,
-					%writeln((W,RelDer)),
-					recorda(proposal,relderivative(Key,Head,Distribution,UnifBody,Var,W),_), % for finite!
-					bb_get(wevidence,Wold),
-					Wnew is Wold*W,
-					bb_put(wevidence,Wnew)
-					)
-					;
-					(
-						sample(Distribution,Var),
-						likelihood_weighting(Var,Distribution,WD)
-					)
-				)
-			)),
-			%writeln(copyQ),
-			%writeln(CopyQ),
-			%writeln(q),
-			%writeln(Q),
-			((nth0(Pos,Q,HeadQ ~= VarQ),ground(HeadQ)) -> (Head=HeadQ,Var=VarQ);true) %to check
-			%writeln(q),
-			%writeln(Q)
+		(ground(Head2~=Var2))-> % Head and value ground in the original query
+		(
+		%	writeln(InQ= Head ~= Val),
+			Var=Val,
+			(Var2=Val -> true; (bb_put(q,false),trace,!,fail)),
+			bb_put(q,Rest),
+			likelihood_weighting(Val,Distribution,W,DistDX),
+%			writeln(likelihood_weighting(Val,Distribution,W)),
+		
+			(DistDX>0 -> ( bb_get(dx,OldDX),DX is OldDX+DistDX, bb_put(dx,DX) );true),
+			bb_get(wevidence,Wold),
+			Wnew is Wold*W,
+			bb_put(wevidence,Wnew),
+			%bb_get(dx,NewDX),
+			%writeln(v(Head ~= Val,Head2~=Var2,W,NewDX)),
+			(Wnew>0 -> true; (!,fail))
+			%bb_put(q,QQ2)%
+			%,
+			%writeln(lw(Wnew,QQ2,Rest))
 		)
 		;
-		(user:adapt(Head) ->
-					(
-					%trace,
-					
-					(recorded(proposal,localproposal(Head,Distribution,UnifBody,TypeD,PropD),_) ->
-					true ; defaultproposal(Head,UnifBody,TypeD,Distribution,PropD)),
-					(TypeD==finite ->
-					(
-					prod_distrib(Distribution,finite(PropD),ProdNorm)
-					
-					)
-					;
-					writeln('not implemened')
-					),
-					
-					sample(ProdNorm,Var),
-					%recorda(Key,Head ~= Var,_),
-					likelihood_weighting(Var,Distribution,WN),
-					likelihood_weighting(Var,ProdNorm,WD),
-									
-					W is WN/WD,
-					%todo compute derivative for finite
-					likelihood_weighting(Var,finite(PropD),ParamF),
-					RelDer is 1/ParamF,
-					%writeln((W,RelDer)),
-					recorda(proposal,relderivative(Key,Head,Distribution,UnifBody,Var,W),_), % for finite!
-					bb_get(wevidence,Wold),
-					Wnew is Wold*W,
-					bb_put(wevidence,Wnew)
-					)
-					;
-					(
-						sample(Distribution,Var),
-						likelihood_weighting(Var,Distribution,WD)
-					)
-				)
+			sampleadapt(Key,Head,Head2,Rest,Val,Var,Var2,Distribution,WD)
+		),
+		(
+		query_propagation(true) ->
+			(simplify_queryAND(Head,Var,Rest,QQout,0,_),flatten(QQout,QQout1),bb_put(q,QQout1)) %,writeln(q(QQout1))
+		;
+			true
+		)
+	)
+	;
+		(
+		sampleadapt(Key,Head,Head2,Rest,Val,Var,Var2,Distribution,WD),
+		(
+		query_propagation(true) ->
+			(simplify_queryAND(Head,Var,QQ,QQout,0,_),flatten(QQout,QQout1),bb_put(q,QQout1)) %,writeln(q(QQout1))
+		;
+			true
+		)
+		)
 	),
 	(
-	user:adapt(_) ->
+	(user:adapt(_),ground(WD)) ->
 		(
 		recorded(proposal,proposalprob(Key,PPold),Ref),
 		erase(Ref),
@@ -1551,70 +1852,91 @@ proof_query_backward_lw_adapt(Key,Head ~= Val,Q) :-
 		true
 	),
 	recorda(Key,Head ~= Var,_),
+%	writeln(Head ~= Var),
+%	(Head ~= Var = coin~=false ->trace;true),
 	Var=Val.
-
-proof_query_backward_lw_adapt(Key,Head,Q) :-
-	Head\=(_ ~= _),
-	tabling_proof_query_backward_lw_adapt(Key,Head,Q,_),	
-	ground(Head),
-	\+recorded(Key,Head,_),
-	recorda(Key,Head,_).
-
-tabling_proof_query_backward_lw_adapt(Key,Head,Distribution,Q,Body) :-
-	user:distributionalclause(Head,Distribution,Body,_),
- 	proof_query_backward_lw_adapt(Key,Body,Q).
-
 	
-tabling_proof_query_backward_lw_adapt(Key,Head,Q,Body) :-
-	user:hardclause(Head,Body,_),
-	proof_query_backward_lw_adapt(Key,Body,Q).
-
-
-proof_query_backward_lw_adapt(Key,Head ~= Val,Q) :-
-	recorded(global,distributionalclause(Head,Distribution,Body,_),_),
-%	test_to_list(Q,Qlist),
- 	proof_query_backward_lw_adapt(Key,Body,Q),
-	ground(Head),
-	ground(Distribution),
-	\+recorded(Key,Head ~= _,_),
-	duplicate_term(Q,CopyQ),
-	(nth0(Pos,CopyQ,Head ~= Var) ->
-%	(member(Head ~= Var,Q) ->
+sampleadapt(Key,Head,Head2,Rest,Val,Var,Var2,Distribution,WD) :-
+	(user:adapt(Head) ->
 		(
-			(ground(Head ~= Var) ->
-			(
-				Var=Val,
-				likelihood_weighting(Var,Distribution,W),
-				bb_get(wevidence,Wold),
-				Wnew is Wold*W,
-				bb_put(wevidence,Wnew)
-			)
-			;
-			(
-				(user:adapt(Head) ->
-					(
-					writeln('not implemented'),
-					halt
-					)
-					;
-					(
-						sample(Distribution,Var)
-					)
-				)
-			)),
-			%writeln(copyQ),
-			%writeln(CopyQ),
-			%writeln(q),
-			%writeln(Q),
-			((nth0(Pos,Q,HeadQ ~= VarQ),ground(HeadQ)) -> (Head=HeadQ,Var=VarQ);true)
-			%writeln(q),
-			%writeln(Q)
+		%trace,
+		
+		(recorded(proposal,localproposal(Head,Distribution,UnifBody,TypeD,PropD),_) ->
+		true ; defaultproposal(Head,UnifBody,TypeD,Distribution,PropD)),
+		
+		(TypeD==finite ->
+		(
+			prod_distrib(Distribution,finite(PropD),ProdNorm), % product between the original distribution and the 
+			sample(ProdNorm,Var),
+			%recorda(Key,Head ~= Var,_),
+			likelihood_weighting(Var,Distribution,WN), % original distribution
+			likelihood_weighting(Var,ProdNorm,WD), % proposal distribution
+							
+			W is WN/WD,
+			%todo compute derivative for finite
+			likelihood_weighting(Var,finite(PropD),ParamF),
+			RelDer is 1/ParamF,
+		%	writeln(relder(W is WN/WD,RelDer is 1/ParamF,PropD)),
+			recorda(proposal,relderivative(Key,Head,Distribution,UnifBody,Var,W),_)
 		)
 		;
-		sample(Distribution,Var)
-	),
-	recorda(Key,Head ~= Var,_),
-	Var=Val.
+		(
+			TypeD==poisson ->
+			(
+				sample(poisson(PropD),Var),
+				likelihood_weighting(Var,Distribution,WN), % original distribution
+				likelihood_weighting(Var,poisson(PropD),WD), % proposal distribution
+				W is WN/WD,
+				RelDer is -1+Var/PropD, % derivate of log poisson
+				%writeln(relder(RelDer is -1+Var/PropD)),
+				
+				recorda(proposal,relderivative(Key,Head,Distribution,UnifBody,Var,RelDer),_)
+			)
+			;
+			(TypeD==gaussian ->
+			(
+				PropD=(M,V),
+				sample(gaussian(M,V),Var),
+				likelihood_weighting(Var,Distribution,WN), % original distribution
+				likelihood_weighting(Var,gaussian(M,V),WD), % proposal distribution
+				W is WN/WD,
+				RelDerM is (Var-M)/V, % derivate of log gaussian wrt M (1 dim)
+				RelDerV is ((Var-M)^2/(2*V^2)-1/(2*V))  * V, % derivate of log gaussian wrt V (1 dim) TOCHECK
+				%writeln(relder(RelDer is -1+Var/PropD)),
+				%writeln((M,V)=(RelDerM,RelDerV)),
+				recorda(proposal,relderivative(Key,Head,Distribution,UnifBody,Var,(RelDerM,RelDerV)),_)
+			)
+			;
+			writeln('not implemened')
+			)
+		)
+		),
+		
+		
+		
+		bb_get(wevidence,Wold),
+		Wnew is Wold*W,
+		bb_put(wevidence,Wnew)
+		)
+		;
+		(
+			sample(Distribution,Var),
+			(
+			(ground(Head2) )->
+				(
+					Head=Head2,Var=Var2,
+					%writeln(newq(QQ))
+					%setarg(Pos,QQ,null),
+					bb_put(q,Rest)%,
+					%writeln(newq(QQ))
+				)
+			;
+				true
+			),
+			likelihood_weighting(Var,Distribution,WD)
+		)
+	).
+
 
 %%%% end proof_query_backward_lw_adapt %%%%
 
@@ -1798,54 +2120,6 @@ proof_query_backward_lw(Key,Temp,Head ~= Val,_) :-
 	Var=Val.
 
 % end proof_query_backward_lw temp
-/*
-% evidence needs to be asserted
-check_evidence_backward(Key,PosEvidence,Wtot) :-
-	bb_put(wevidence,1.0),
-	forall(member(H,PosEvidence),
-		(
-%			trace,
-			proof_query_backward_eval(Key,H,W),
-%			writeln(proof_query_backward_eval(Key,H,W)),
-			W>0,
-			bb_get(wevidence,Wold),
-%			writeln(bb_get(wevidence,Wold)),
-			Wnew is Wold*W,
-%			writeln(Wold*W),
-			bb_put(wevidence,Wnew)
-			
-			
-		)),
-	bb_delete(wevidence,Wtot),!.
-*/	
-	
-	
-/*	
-	(	% check positive evidence
-		user:evidence(H,1),
-		%member(H,PosEvidence),
-		bb_get(wevidence,Wold),
-		check_evidence_proof(Key,H,W),%proof_query_backward_eval(Key,Key,H,W),
-		Wnew is Wold*W,
-		bb_put(wevidence,Wnew),
-		fail;
-		true
-	),
-	bb_delete(wevidence,Wtot).
-check_evidence_proof(Key,H,W) :-
-	proof_query_backward_eval(Key,H,W),
-	%writeln(proof_query_backward_eval(Key,Key,H,W)),
-	!.
-*/
-log_likelihood_weighting(Val,D,LogW) :-
-	likelihood_weighting(Val,D,W),
-	LogW is log(W),!.
-
-log_likelihood_weighting(Val,logfinite(L),W) :- % log weight
-	member(W:Val,L),!.
-
-log_likelihood_weighting(Val,logfinite(L),(-inf)) :- % log weight
-	\+member(W:Val,L),!.
 
 occurlist(E,[],0) :- !.
 occurlist(E,[H|T],V) :- 
@@ -1867,22 +2141,30 @@ occurlistweight(E,[W:H|T],V) :-
 	occurlistweight(E,T,V2),
 	V is V2+Add.
 
+
+
+log_likelihood_weighting(Val,logfinite(L),W) :- % log weight
+	member(W:Val,L),!.
+
+log_likelihood_weighting(Val,logfinite(L),(-inf)) :- % log weight
+	\+member(W:Val,L),!.
+	
+log_likelihood_weighting(Val,D,LogW) :-
+	likelihood_weighting(Val,D,W),
+	LogW is log(W),!.
+	
 likelihood_weighting(Val,val(Val),1.0) :- !.
-likelihood_weighting(Val,val(V),0.0) :- V\=Val,!.
+likelihood_weighting(Val,val(V),P) :-
+	number(V) -> 
+	(
+		(abs(V-Val)<0.000000000000001 -> P=1;P=0)
+	;
+		(V\=Val -> P=0;P=1)
+	),!.
 	
 likelihood_weighting(Val,uniform(L),W) :-
 	uniformweight(Val,L,W),!.
-	
-/*	occurlist(Val,L,NVal), % memberchk(Val,L),
-	length(L,N),
-	W is NVal/N,!.
-*/	
-	
-/*
-likelihood_weighting(Val,uniform(L),0.0) :-
-	\+memberchk(Val,L),
-	!.
-*/
+
 likelihood_weighting(Val,beta(A,B),W) :-
 	betaPdf(Val,A,B,W),!.
 	
@@ -1894,34 +2176,18 @@ likelihood_weighting(Val,contUniform(A,B),W) :-
 likelihood_weighting(Val,contUniform(A,B),0.0) :-
 	(Val<A;Val>B),!.
 	
+likelihood_weighting(Val,finite([W:Val]),W) :-
+	!.
+	
 likelihood_weighting(Val,finite(L),W) :-
 	finiteweight(Val,L,W),!.
-/*
-likelihood_weighting(Val,finite(L),W) :-
-	(
-	member(W:Val,L) ->
-		true
-	;
-		W=0
-	),!.
-	*/
+
 likelihood_weighting(Val,propfinite(L),W) :-
 	finiteweight(Val,L,W1),
 	sum_prob(L,Sum),
 	W is W1/Sum,!.	
 	%occurlistweight(Val,L,W),!.%member(W:Val,L),!.
-/*
-likelihood_weighting(Val,finite(L),0.0) :-
-	\+member(W:Val,L),!.
-*/	
-	
-/*
-likelihood_weighting(Val,logfinite(L),W) :- % log weight
-	member(W:Val,L),!.
 
-likelihood_weighting(Val,logfinite(L),(-inf)) :- % log weight
-	\+member(W:Val,L),!.
-*/
 likelihood_weighting(Val,gaussian(M,Cov),W) :-
 	test_to_list(Val,List),
 	is_list(M),
@@ -1949,12 +2215,12 @@ likelihood_weighting(Val,invgamma(Alpha,Beta),W) :-
 likelihood_weighting(Val,dirichlet(Param),W) :-
 	dirichletPdf(Param,Val,W),!.
 
-
-listnelem([],0) :- !.
-listnelem([A|T],L) :-
-	L>0,
-	L1 is L-1,
-	listnelem(T,L1), !.
+likelihood_weighting(Val,sigmoid(X,Class),W) :-
+	(Val==Class ->
+	W is 1/(1+e^(-X))
+	;
+	W is 1-1/(1+e^(-X))
+	),!.
 
 likelihood_weighting(Val,indepGaussians([(M,Cov)|T]),W) :-
 	test_to_list(Val,List),
@@ -1980,8 +2246,142 @@ likelihood_weighting(Val,indepGaussians([(M,Cov)|T]),W) :-
 likelihood_weighting(Val,poisson(Lambda),W) :-
 	poissonPdf(Val,Lambda,W),!.
 
+
+likelihood_weighting(Val,_,0.0) :- !.
 % complete likelihood_weighting
 
+% LW with dx
+
+
+log_likelihood_weighting(Val,logfinite(L),W,0) :- % log weight
+	member(W:Val,L),!.
+
+log_likelihood_weighting(Val,logfinite(L),(-inf),0) :- % log weight
+	\+member(W:Val,L),!.
+
+log_likelihood_weighting(Val,D,LogW,DX) :-
+	likelihood_weighting(Val,D,W,DX),
+	LogW is log(W),!.
+	
+likelihood_weighting(Val,val(Val),1.0,0) :- !.
+likelihood_weighting(Val,val(V),P,0) :-
+	number(V) -> 
+	(
+		(abs(V-Val)<0.000000000000001 -> P=1;P=0)
+	;
+		(V\=Val -> P=0;P=1)
+	),!.
+	
+likelihood_weighting(Val,uniform(L),W,0) :-
+	uniformweight(Val,L,W),!.
+
+likelihood_weighting(Val,beta(A,B),W,1) :-
+	betaPdf(Val,A,B,W),!.
+	
+likelihood_weighting(Val,contUniform(A,B),W,1) :-
+	Val>=A,
+	Val=<B,
+	W is 1/(B-A),!.
+
+likelihood_weighting(Val,contUniform(A,B),0.0,1) :-
+	(Val<A;Val>B),!.
+	
+likelihood_weighting(Val,finite([W:Val]),W,0) :-
+	!.
+likelihood_weighting(Val,finite(L),W,0) :-
+	finiteweight(Val,L,W),!.
+
+likelihood_weighting(Val,propfinite(L),W,0) :-
+	finiteweight(Val,L,W1),
+	sum_prob(L,Sum),
+	W is W1/Sum,!.	
+	%occurlistweight(Val,L,W),!.%member(W:Val,L),!.
+
+likelihood_weighting(Val,gaussian(M,Cov),W,DX) :-
+	test_to_list(Val,List),
+	is_list(M),
+	is_list(Cov),
+	length(M,DX),
+	densityGaussian(M,Cov,List,W),!.
+
+likelihood_weighting(Val,gaussian(M,Cov),W,1) :-
+	test_to_list(Val,List),
+	\+is_list(M),
+	\+is_list(Cov),
+	densityGaussian([M],[Cov],List,W),!.
+
+likelihood_weighting(Val,student(Nu,Mean,Var),W,1) :-
+	X is (Val-Mean)/sqrt(Var),
+	studentPdf(Nu,X,W),!.
+
+likelihood_weighting(Val,gamma(A,B),W,1) :-
+	gammaPdf(A,B,Val,W),!.
+
+likelihood_weighting(Val,invgamma(Alpha,Beta),W,1) :-
+	B is 1/Beta,
+	V is 1.0/Val,
+	gammaPdf(Alpha,B,V,W),!.
+
+likelihood_weighting(Val,dirichlet(Param),W,DX) :-
+	length(Param,DX),
+	dirichletPdf(Param,Val,W),!.
+
+likelihood_weighting(Val,sigmoid(X,Class),W,1) :-
+	(Val==Class ->
+	W is 1/(1+e^(-X))
+	;
+	W is 1-1/(1+e^(-X))
+	),!.
+
+likelihood_weighting(Val,indepGaussians([(M,Cov)|T]),W,DX) :-
+	test_to_list(Val,List),
+	is_list(M),
+	is_list(Cov),
+	length(M,Len),
+	removenelem(List,Len,NL,Suff),
+	densityGaussian(M,Cov,NL,W1),
+	length(Suff,Res),
+	(
+	Res>0 ->
+		(
+		test_to_list(Val2,Suff),
+		likelihood_weighting(Val2,indepGaussians(T),W2,DX2),
+		W is W1*W2
+		)
+	;
+		(
+		T=[]->
+		(
+			W=W1,
+			DX2=0
+		)
+		;
+			(W=0.0,DX2=0)
+		)
+	),
+	DX is Len+DX2, 
+	!.
+	
+likelihood_weighting(Val,poisson(Lambda),W,0) :-
+	poissonPdf(Val,Lambda,W),!.
+	
+% needs to be the last
+likelihood_weighting(Val,_,0.0,0) :- !.
+% end LW with dx
+
+
+removenelem(L,0,[],L) :-!.
+removenelem([A|T],N,[A|TT],L) :-
+	N>0,
+	N1 is N-1,
+	removenelem(T,N1,TT,L), !.
+
+listnelem([],0) :- !.
+listnelem([A|T],L) :-
+	L>0,
+	L1 is L-1,
+	listnelem(T,L1), !.
+	
 %%%
 
 
@@ -3818,7 +4218,7 @@ experiment_naive(File,Q,E,N,Repeat,AVG,S,T) :-
 	ConfSSup is sqrt(V+ConfVar)-S,
 	ConfS is (ConfSSup+ConfSInf)/2,
 	open(File,'append',F),
- 	write(F,'naive MC'),
+ 	write(F,'naive'),
 %	write('p('),write(Q),write('|'),write(E),write(')='),
 	write(F,','),write(F,AVG),write(F,','),
  	write(F,N), write(F,','),write(F,T),write(F,','),
@@ -3840,6 +4240,16 @@ experiment_LW(File,Q,E,N,Repeat,AVG,S,T) :-
 	ConfS is (ConfSSup+ConfSInf)/2,
 	open(File,'append',F),
  	write(F,'LW'),%write('p('),write(Q),write('|'),write(E),write(')='),
+ 	(query_propagation(true) ->
+		write(F,'exp')
+		;
+		true
+	),
+	(inference(backward(lazy)) ->
+		write(F,'lazy')
+		;
+		true
+	),
 	write(F,','),write(F,AVG),write(F,','),
  	write(F,N), write(F,','),write(F,T),write(F,','),
  	write(F,S),write(F,','),write(F,ConfSInf),write(F,','),write(F,ConfSSup),write(F,','),write(F,ConfS),nl(F),close(F).
@@ -3868,6 +4278,16 @@ experiment_LW2(File,Q,E,N,Repeat,AVG,S,T) :-
 	ConfS is (ConfSSup+ConfSInf)/2,
 	open(File,'append',F),
  	write(F,'LW2'),%write('p('),write(Q),write('|'),write(E),write(')='),
+ 	(query_propagation(true) ->
+		write(F,'exp')
+		;
+		true
+	),
+	(inference(backward(lazy)) ->
+		write(F,'lazy')
+		;
+		true
+	),
 	write(F,','),write(F,AVG),write(F,','),
  	write(F,N), write(F,','),write(F,T),write(F,','),
  	write(F,S),write(F,','),write(F,ConfSInf),write(F,','),write(F,ConfSSup),write(F,','),write(F,ConfS),nl(F),close(F).
@@ -4241,7 +4661,7 @@ eval_query_backward_noLW(PosEvidence,NegEvidence,Query1,X,N,P,Succ_Sum,Sum) :-
 		New_Sum is Old_Sum + 1,
 		bb_put(sample_sum,New_Sum),
 		(
-			proof_query_backward(sampled,Query)%proof_query_backward_eval(sampled,sampled,Query,W2)
+			proof_query_backward(sampled,Query)%proof_ query_backward_eval(sampled,sampled,Query,W2)
 			->
 			(
 				W2=1.0,
@@ -4339,7 +4759,7 @@ eval_query_distribution(X,PosEvidence,NegEvidence,Query,N,P,Succ_Sum,Sum) :-
 	),
 	retractall(user:evidence(_,_)),
 	!.
-
+/*
 % evaluate the distribution not compact of X in a query, not normalized
 eval_query_valuelist(X,PosEvidence,NegEvidence,Query,N,P,Sum) :-
 	bb_put(sample_sum,0.0),
@@ -4358,22 +4778,7 @@ eval_query_valuelist(X,PosEvidence,NegEvidence,Query,N,P,Sum) :-
 		bb_get(sample_sum,Old_Sum),
 		New_Sum is Old_Sum + W1,
 		bb_put(sample_sum,New_Sum),
-		proof_query_backward(sampled,Query),/*
-		(
-			
-			findall(W1:X,proof_query_backward(sampled,Query),List)
-			->
-			(
-				true
-			%	bb_get(succeeding_sample_sum,Old),
-				%sum_distrib(finite(Old),finite(List),W1,finite(New)),
-			%	append([Old,List],New),
-				%write((List,Weight,New)),nl,
-			%	bb_put(succeeding_sample_sum,New)
-			)
-			;
-		  	List=[]
-		),	*/	  	
+		proof_query_backward(sampled,Query),
 		(
 		get_debug(true)->
 			write('Particle '),write(I),write(' w '),writeln(W1),nl,findall(A,(recorded(sampled,A,_), write(A),nl),_),nl,writeln('------------------------------------');
@@ -4386,6 +4791,52 @@ eval_query_valuelist(X,PosEvidence,NegEvidence,Query,N,P,Sum) :-
 	%P=List,
 	retractall(user:evidence(_,_)),
 	!.
+*/
+% evaluate the distribution not compact of X in a query, not normalized without DX!!!! FIXME!
+eval_query_valuelist(E,NegEvidence,Q,X,N,P,Sum) :-
+	duplicate_term(E,PosEvidence),
+	duplicate_term((Q,X),(Query1,X)),
+	(is_list(Query1)->
+	(test_to_list(Query,Query1),ListQuery=Query1)
+	;
+	(test_to_list(Query1,ListQuery),Query1=Query)
+	),
+	query_propagation(Expand),
+	(false ->
+	(
+		expandquery5(ListQuery,InitialQuery)
+	)
+	;
+	(
+		InitialQuery=ListQuery
+	)
+	),
+
+	bb_put(sample_sum,0.0),
+	bb_put(succeeding_sample_sum,0.0),
+	bb_put(dxe,10000), % should be infinite
+	bb_put(dxq,10000), % should be infinite
+%	eraseall(proposal),
+%	user:proposals,
+	I=sampledtemp,%I,
+	test_to_list(PosEvidenceTuple,PosEvidence),
+	(Expand==true ->
+	(
+		expandquery5(PosEvidence,InitialPosEvidence)
+	)
+	;
+	(
+		InitialPosEvidence=PosEvidence
+	)
+	),
+	
+	findall(W1:X,( between(1,N,_),
+	main_evalquery_lw(W1,DX,1,I,PosEvidence,NegEvidence,InitialPosEvidence,PosEvidenceTuple,Query,InitialQuery)),P),
+	%eraseall(sampled),
+	bb_delete(sample_sum,Sum),
+	bb_delete(succeeding_sample_sum,Succ_Sum),
+	!.
+
 	
 % evaluate the distribution not compact of X in a query
 eval_query_valuelist2(X,PosEvidence,NegEvidence,Query,N,P,Succ_Sum,Sum) :-
@@ -4527,8 +4978,13 @@ eval_query_distribution_eval(X,PosEvidence,NegEvidence,Query,N,P,Succ_Sum,Sum) :
 	!.
 
 generate_backward(Query,L) :-
+	generate_backward([],Query,L).
+	
+generate_backward(IE,Query,L) :-
 	eraseall(sampled),
 	abolish_all_tables,
+%	bb_put(q,[]),
+	assert_impossible_evidence(sampled,IE),
 	(proof_query_backward(sampled,Query);true),
 	findall(A,recorded(sampled,A,_),L),!.
 
@@ -4642,7 +5098,7 @@ headgrounded([Q|T],GroundedQuery) :-
 		headgrounded(T,GroundedQuery)
 	).
 
-
+/*
 % to finish
 expandquery([],[]) :-!.
 expandquery([A|T],NewE) :-
@@ -4677,9 +5133,571 @@ expandquery([A|T],NewE) :-
 		NewE=[ExpT] % we remove facts because we cannot ground % old code: NewE=[A|ExpT]
 	)
 	).
+*/
+getbody(A,[],[],Level):-!.
+getbody(H~=V,[HH:DD:BB|T],[BBList2|BBT],Level) :-
+	!,
+	(BB==true ->
+	BBList0=[true]
+	;
+	test_to_list(BB,BBList0)
+	),
+	
+	HH=H,
+	(
+		(
+		(DD=val(XX) -> XX=V;true),
+		(DD=finite([1:XX]) -> XX=V;true),
+		
+		term_variables(HH,VarHH),
+		simplify_queryAND(0,0,BBList0,BBList1,0,VarHH),
+		flatten(BBList1,BBList),
+		
+		
+		
+	%	(DD=uniform([XX]) -> XX=V;true), % FIXME
+	%	writeln((H~=V,HH,DD,BB)),
+		(Level<4 ->
+		expandquery2(BBList,BBList2,Level)
+		;
+		BBList2=BBList
+		)
+		) -> true; BBList2=[false]
+	),
+%	write(H~=V),write(' '),write(BBList0),write(' '),write(BBList1),write(' '),writeln(BBList2),
+%	test_to_list(BBList3,BBList2),
+	getbody(H~=V,T,BBT,Level),!.
+
+getbody(H,[HH:BB|T],[BBList2|BBT],Level) :-
+	(BB==true ->
+	BBList0=[true]
+	;
+	test_to_list(BB,BBList0)
+	),
+	HH=H,
+	term_variables(HH,VarHH),
+	simplify_queryAND(0,0,BBList0,BBList1,0,VarHH),
+	flatten(BBList1,BBList),
+	
+	(Level<4 ->
+	expandquery2(BBList,BBList2,Level)
+	;
+	BBList2=BBList
+	),
+%	test_to_list(BBList3,BBList2),
+%	write(H),write(' '),write(BBList0),write(' '),write(BBList1),write(' '),writeln(BBList2),
+	getbody(H,T,BBT,Level),!.
+	
+expandquery3(A,Out):-
+	
+	expandquery2(A,Exp1,0),
+	
+	simplify_query(0,0,Exp1,Exp2),
+%	writeln(A),
+%	writeln(Exp1),
+%	writeln(Exp2),
+	removedup(Exp2,Out,Exp2),
+	writeln(Out).
+
+/*	findall(OutX2,(distributionalclause:executeq(Out,OutX),Out\==OutX,distributionalclause:simplify_query(0,0,OutX,OutX2)),L),
+	writeln(ok1),
+	findall(O,(member(O,L),O\==[false]),L2),
+	writeln(ok2),
+	distributionalclause:removedup(L2,L3,L2),
+	writeln(ok3),
+	test_to_list(Tuple,L3),
+	distributionalclause:simplify_query(0,0,[Tuple],Tuple2),
+	writeln(ok4),
+	writeln(Tuple2).
+	*/
+
+expandquery4(A,Final2):-
+	
+	findall(OutT3,(distributionalclause:exp4(A,OutT,0),
+	flatten(OutT,OutT2),distributionalclause:simplify_query(0,0,OutT2,OutT3)),LL),
+	(LL\==[]->
+	test_to_list(LLT,LL)
+	;
+	LLT=[false]
+	),
+	distributionalclause:simplify_query(0,0,[LLT],Out),
+/*	findall(D,(member(B,LL),member(D,B),ground(D),forall(member(E,LL),member(D,E))),LLL),
+	remove_duplicates(LLL,LLL2),
+	findall(D,(member(B,LL),removelist(LLL2,LLL2,B,D)),LL3),
+	test_to_list(LL4,LL3),
+	flatten([LLL2|[LL4]],Final),*/
+%	writeln(Out),
+	necessary(Out,Final2),
+	writeln(Final2).
+
+expandquery5(A,Out2):-
+	findall(OutT3,(distributionalclause:exp5(A,OutT,0),
+	flatten(OutT,OutT2),distributionalclause:simplify_query(0,0,OutT2,OutT3)),LL),
+	(LL\==[]->
+	test_to_list(LLT,LL)
+	;
+	LLT=[false]
+	),
+	distributionalclause:simplify_query(0,0,[LLT],Out),
+	removedup(Out,Out2,Out),
+	writeln(Out2).
+
+necessary(Init,Final) :-
+	(
+	(memberformula(Init,Head~=Var),ground(Head~=Var),simplify_queryANDnot(Head,Var,Init,O,0,_),flatten(O,OO),OO==[false])->
+	(
+		%writeln(Head~=Var),
+		simplify_queryAND(Head,Var,Init,New,0,_),
+		%writeln(New),
+		necessary(New,Final2),
+		Final=[Head~=Var|Final2]
+	)
+	;
+	Final=Init
+	),writeln(Init:Final).
+
+memberformula((A,B),C) :-
+	memberformula(A,C).
+memberformula((A,B),C) :-
+	memberformula(B,C).
+memberformula([A|B],A) :-
+	A\=[_|_],
+	A\=(_,_).
+
+memberformula([A|B],C) :-
+	memberformula(B,C).
+memberformula([A|B],C) :-
+	memberformula(A,C).
+	
+removelist(Full,_,[],[]) :-!.
+removelist(Full,[],[C|D],[C|DD]) :-
+	removelist(Full,Full,D,DD).
+removelist(Full,[A|B],[C|D],Out) :-
+	A==C ->
+	removelist(Full,B,D,Out)
+	;
+	removelist(Full,B,[C|D],Out).
+
+executeq([A],[Out]) :-
+	
+	!,
+	executeq(A,Out).
+executeq([A|B],Out) :-
+	!,
+	executeq(A,A1),
+	executeq(B,B1),
+	(A1==false->
+		Out=false
+	;
+		(A1==true->
+			Out=B1
+		;
+			(B1==true->
+				Out=A1
+				;
+				(B1==false ->
+				Out=false
+				;
+				Out=[A1|B1]
+				)
+			)
+		)
+	).
+executeq((A,B),Out) :-
+	!,
+	executeq(A,A1),
+	executeq(B,B1),
+	(A1==false ->
+	 	Out=B1
+	 ;
+		(B1==false->
+			Out=A1
+		;
+			(
+			(A1==true;B1==true)->
+			Out=true
+			;
+			Out=(A1,B1)
+			)
+		)
+	).
+	
+executeq(A,O) :-
+	user:builtin(A),
+	ground(A),
+	(A-> O=true;O=false).
+executeq(A,true) :-
+	user:builtin(A),
+	\+ground(A),
+	A.
+executeq(A,A) :-
+	user:builtin(A),
+	\+ground(A).
+/*
+executeq(A,false) :-
+	user:builtin(A),
+	\+A.*/
+executeq(A,A) :-
+	\+user:builtin(A).
+
+	
+removedup([],[],_):-!.
+removedup([H~=V|In],Out,Full) :-
+	((inlist(H~=V,In,Head2~=Var2,Rest),H==Head2) ->
+		(V=Var2,removedup(In,Out,Full))
+	;
+		(
+		removedup(In,OutIn,Full),
+		Out=[H~=V|OutIn]
+		)
+	),!. 
+
+removedup([H|In],Out,Full) :-
+	H\=(_,_),
+	((inlist(H,In,Head2,Rest),H==Head2) ->
+		removedup(In,Out,Full)
+	;
+	(
+		removedup(In,OutIn,Full),
+		Out=[H|OutIn]
+/*		(
+		(term_variables(H,ListVar),member(E,ListVar),inlist(H,Full,_,Rest),variable_in_term(Rest,E))->
+			Out=[H|OutIn]
+			;
+			Out=OutIn
+		)*/
+	)
+	),!.
+
+removedup([H|In],[H|Out],Full) :-
+	removedup(In,Out,Full),!.
+
+eqlist([],[],[]) :-!.
+eqlist([F|ListH],[F2|ListH2],[F2=F|Rest]) :-
+	eqlist(ListH,ListH2,Rest),
+	!.
+compdc(H,Distribution,Body) :-
+	ground(H),
+	!,
+	user:distributionalclause(H,Distribution,Body,_).
+compdc(H,Body) :-
+	ground(H),
+	!,
+	user:hardclause(H,Body,_).
+	
+compdc(HH,Distribution,Body) :- % FIXME not sure it is currect
+	user:distributionalclause(H,Distribution,Body,_),
+	variant(H,HH),
+	H=HH.
+	
+compdc(HH,Body) :- % FIXME not sure it is currect
+	user:hardclause(H,Body,_),
+	variant(H,HH),
+	H=HH.
+	
+compdc(HH,Distribution,NewB) :-
+	\+ground(HH),
+	user:distributionalclause(H,Distribution,Body,_),
+	unifiable(H,HH,_),
+	H=..[_|ListH],
+	HH=..[_|ListHH],
+	%variable_in_term(H,LH),
+	eqlist(ListH,ListHH,LL),
+	test_to_list(Body,BodyList),
+	append(LL,BodyList,NewBList),
+	test_to_list(NewB,NewBList).
+	
+compdc(HH,NewB) :-
+	\+ground(HH),
+	user:hardclause(H,Body,_),
+	unifiable(H,HH,_),
+	H=..[_|ListH],
+	HH=..[_|ListHH],
+	%variable_in_term(H,LH),
+	eqlist(ListH,ListHH,LL),
+	test_to_list(Body,BodyList),
+	append(LL,BodyList,NewBList),
+	test_to_list(NewB,NewBList).
 
 
-main_evalquery_lw(NPE,NQQ,X,I,PosEvidence,NegEvidence,InitialPosEvidence,PosEvidenceTuple,Query,InitialQuery) :-
+exp4(true,true,L) :-
+	!.
+exp4([],[],L) :-
+	!.
+exp4([A|B],[A2|B2],L) :-
+	!,
+	exp4(A,A2,L),
+	exp4(B,B2,L).
+
+exp4(\+A,true,L) :-
+	user:builtin(A),
+	ground(A),!,
+	\+user:A.
+		
+exp4(A,true,L) :-
+	user:builtin(A),
+	ground(A),!,
+	user:A.
+	
+exp4(A,AA,L) :-
+	user:builtin(A),
+	\+ground(A),!,	
+	(invertformula(A)-> AA=true; AA=A).
+
+exp4(\+A,\+A,L) :-
+	!.	
+
+
+%%% Tabling %%%
+exp4(Head ~= Val,Out,L) :-
+	%writeln(Head:L),
+	limitexp4(L),
+	LL is L+1,
+	(user:distributionalclause(Head,Distribution,Body,_),
+	(
+	(Distribution=val(XX) -> XX=Val;true),
+	(Distribution=finite([1:XX]) -> XX=Val;true),
+	(Body==true-> Body1=true ; test_to_list(Body,Body1)),
+	exp4(Body1,BB,LL),
+	Out=[Head ~= Val|BB]
+	)
+	%;
+	%Out=false
+	).%,writeln((Head ~= Val,Out)).
+	
+exp4(Head,BB,L) :-
+%	writeln(Head),
+%	(Head=neighbor(_,_,_,_,_)->trace;true),
+	Head\=(_ ~= _),
+	limitexp4(L),
+	LL is L+1,
+	(user:hardclause(Head,Body,_),  %->
+	((Body==true-> Body1=true ; test_to_list(Body,Body1)),
+	exp4(Body1,BB,LL)
+	)
+	%;
+	%BB=false
+	).%,
+%	writeln(Head:BB).
+
+exp4(Head,Head,L) :-
+	\+limitexp4(L).
+
+limitexp4(L) :- L<5,!.
+	
+	
+% exp5
+
+exp5(true,true,L) :-
+	!.
+exp5([],[],L) :-
+	!.
+exp5([A|B],[A2|B2],L) :-
+	!,
+	exp5(A,A2,L),
+	exp5(B,B2,L).
+
+exp5(\+A,true,L) :-
+	user:builtin(A),
+	ground(A),!,
+	\+user:A.
+		
+exp5(A,true,L) :-
+	user:builtin(A),
+	ground(A),!,
+	user:A.
+	
+exp5(A,AA,L) :-
+	user:builtin(A),
+	\+ground(A),!,	
+	(invertformula(A)-> AA=true; AA=A).
+
+exp5(\+A,\+A,L) :-
+	!.	
+
+
+exp5(Head ~= Val,Out,L) :-
+	%writeln(Head:L),
+	limitexp5(L),
+	LL is L+1,
+	ground(Head),
+%	writeln(Head),
+	findall(BB3,(
+		user:distributionalclause(Head,Distribution,Body,_),
+		(Distribution=val(XX) -> XX=Val;true),
+		(Distribution=finite([1:XX]) -> XX=Val;true),
+		(Body==true-> Body1=[true] ; test_to_list(Body,Body1)),
+		exp5(Body1,BB,LL),
+		flatten(BB,BB2),distributionalclause:simplify_query(0,0,BB2,BB3)
+	),List),
+	(List==[] ->
+		Out=[false]
+		;
+		(
+		test_to_list(BBTuple,List),
+		Out=[Head ~= Val|[BBTuple]]
+		)
+	).
+%	writeln(Head:Out).
+	
+exp5(Head,Out,L) :-
+	Head\=(_ ~= _),
+	limitexp5(L),
+	LL is L+1,
+	ground(Head),
+%	writeln(Head),
+	findall(BB3,(
+	user:hardclause(Head,Body,_), 
+	(Body==true-> Body1=[true] ; test_to_list(Body,Body1)),
+	exp5(Body1,BB,LL),
+	flatten(BB,BB2),distributionalclause:simplify_query(0,0,BB2,BB3)
+	),List),
+	(List==[] ->
+		Out=[false]
+		;
+		test_to_list(Out,List)
+	).
+%	writeln(Out).
+
+exp5(Head ~= Val,Out,L) :-
+	\+ground(Head),
+	limitexp5(L),
+%	writeln(Head),
+	LL is L+1,
+	(user:distributionalclause(Head,Distribution,Body,_),
+	(
+	(Distribution=val(XX) -> XX=Val;true),
+	(Distribution=finite([1:XX]) -> XX=Val;true),
+	(Body==true-> Body1=[true] ; test_to_list(Body,Body1)),
+	exp5(Body1,BB,LL),
+	Out=[Head ~= Val|BB]
+	)
+	).%,writeln(Head:Out).
+	
+exp5(Head,BB,L) :-
+	\+ground(Head),
+%	writeln(Head),
+	Head\=(_ ~= _),
+	limitexp5(L),
+	LL is L+1,
+%	(Head=size(_)->trace;true),
+	(user:hardclause(Head,Body,_),
+	((Body==true-> Body1=[true] ; test_to_list(Body,Body1)),
+	exp5(Body1,BB,LL)
+	)
+	).%,writeln(Head:BB).
+
+
+
+	
+exp5(Head,Head,L) :-
+	\+limitexp5(L).
+
+limitexp5(L) :- L<5,!.
+%%
+expandquery2([],[],Level) :-!.
+expandquery2([\+A|T],[\+A|ExpT],Level) :-
+	!,
+	expandquery2(T,ExpT,Level).
+expandquery2([A|T],NewE,Level) :-
+	expandquery2(T,ExpT,Level),
+%	(ExpT==[]->trace;true),
+	%append(ExpT,Full,NewFull),%writeln(NewFull),
+	%(inlist2(A,NewFull,_,RestFull)->true;RestFull=[]),
+	NL is Level+1,
+	(A = H ~= V ->
+	(
+		
+		((inlist(H ~= V,ExpT,Head2~=Var2,Rest),H==Head2) ->
+		(V=Var2,NewE=ExpT)
+		;
+		(
+		findall(H:Distribution:Body,compdc(H,Distribution,Body),L),%writeln(L),
+		
+		(false -> % L=[HH:DD:BB] ->
+		(
+			test_to_list(BB,BBList),
+			HH=H,
+			(DD=val(XX) -> XX=V;true),
+			(DD=finite([1:XX]) -> XX=V;true),
+%			(DD=uniform([XX]) -> XX=V;true), %FIXME : it might unify when uniform(List),
+			
+			expandquery2(BBList,BBList2,NL),
+			
+			%append([HH ~= V],BBList2,AB),
+			
+			append([HH ~= V|BBList2],ExpT,NewE)
+		)
+		;
+			(
+			L=[]->
+				(NewE=[false])
+				;
+				(
+				getbody(A,L,DistjointBBList,NL),
+				%writeln(getbody(A,L,DistjointBBList,RestFull)),
+				(DistjointBBList==[[true]] ->
+					NewE=[A|ExpT]
+				;
+				(
+				test_to_list(DistjointBBList1,DistjointBBList),
+				NewE=[A,DistjointBBList1|ExpT]
+				)
+				)
+				)
+			)
+		)
+		)
+		)
+	)
+	;
+	(
+		((inlist(A,ExpT,Head2,Rest),A==Head2) ->
+		(NewE=ExpT)
+		;
+		(user:builtin(A)->
+%			NewE=[A|ExpT]
+			(
+			ground(A)->
+				(user:A-> (ExpT==[]-> NewE=[true] ; NewE=ExpT) ; NewE=[false])
+			;
+				NewE=[A|ExpT]
+			)
+		;
+		(
+			findall(A:Body,compdc(A,Body),L),
+			(false -> % L=[HH:BB] ->
+			(
+				test_to_list(BB,BBList),
+				HH=A,%trace,
+				expandquery2(BBList,BBList2,NL),
+	%			writeln(append(HH,BBList2,AB)),
+				%append(HH,BBList2,AB),
+				append(BBList2,ExpT,NewE)
+			)
+			;
+			(
+				L=[]->
+				(NewE=[false])
+				;
+				(
+				
+				getbody(A,L,DistjointBBList,NL),
+				test_to_list(DistjointBBList1,DistjointBBList),
+				NewE=[DistjointBBList1|ExpT]
+				)
+			)
+		%	NewE=[A|ExpT]
+			)
+		)
+		)
+		)
+	)
+	).
+
+
+	
+main_evalquery_lw(W1,DX,X,I,PosEvidence,NegEvidence,InitialPosEvidence,PosEvidenceTuple,Query,InitialQuery) :-
 	
 	(
 	eraseall(I),
@@ -4693,9 +5711,10 @@ main_evalquery_lw(NPE,NQQ,X,I,PosEvidence,NegEvidence,InitialPosEvidence,PosEvid
 		bb_put(wevidence,1.0),
 		bb_put(dx,0),
 		% GPosEvidence has to be ground in variable name
-			proof_query_backward_lw(I,PosEvidenceTuple),
-			bb_delete(wevidence,W1),
-			bb_delete(dx,DX)
+		proof_query_backward_lw(I,PosEvidenceTuple),
+		bb_delete(wevidence,W1),
+		bb_delete(dx,DX)
+%		writeln(e(W1,DX))
 	)
 	;
 		(
@@ -4728,7 +5747,7 @@ main_evalquery_lw(NPE,NQQ,X,I,PosEvidence,NegEvidence,InitialPosEvidence,PosEvid
 	bb_get(sample_sum,Old_Sum),
 	New_Sum is Old_Sum + W1,
 	bb_put(sample_sum,New_Sum),*/
-	
+%	writeln(InitialQuery),
 	bb_put(q,InitialQuery),
 %	bb_put(nq,NQQ),
 	
@@ -4744,6 +5763,7 @@ main_evalquery_lw(NPE,NQQ,X,I,PosEvidence,NegEvidence,InitialPosEvidence,PosEvid
 			DXEQ>=DX+DX2,
 			(DXEQ>DX+DX2 ->
 				(
+				%writeln(NW is X*W1*W2),
 				NW is X*W1*W2,
 				bb_put(succeeding_sample_sum,NW),
 				NEWDXEQ is DX+DX2,
@@ -4764,13 +5784,15 @@ main_evalquery_lw(NPE,NQQ,X,I,PosEvidence,NegEvidence,InitialPosEvidence,PosEvid
 	),		  	
 	(
 	get_debug(true)->
-		write('Particle '),write(I),write(' w '),writeln(W1),nl,findall(A,(recorded(I,A,_), write(A),nl),_),nl,writeln('------------------------------------');
+		writeln(Query),write('Particle '),write(I),write(' w '),writeln(W1),nl,findall(A,(recorded(I,A,_), write(A),nl),_),nl,writeln('------------------------------------');
 		true
 	)
 	),!.
 
 % var needs to be grounded
-eval_query_backward_lw(PosEvidence,NegEvidence,Query1,X,N,P,Succ_Sum,Sum) :-
+eval_query_backward_lw(E,NegEvidence,Q,X,N,P,Succ_Sum,Sum) :-
+	duplicate_term(E,PosEvidence),
+	duplicate_term((Q,X),(Query1,X)),
 	%magic,
 %	get_max_priority(MaxP),
 %	retractall(user:evidence(_,_)),
@@ -4782,16 +5804,21 @@ eval_query_backward_lw(PosEvidence,NegEvidence,Query1,X,N,P,Succ_Sum,Sum) :-
 	;
 	(test_to_list(Query1,ListQuery),Query1=Query)
 	),
-	
-%	expandquery(ListQuery,InitialQueryExpanded),
-	InitialQueryExpanded=ListQuery,
-%	writeln(ListQuery),
+	query_propagation(Expand),
+	(Expand==true ->
+	(
+		expandquery5(ListQuery,InitialQuery)
+	)
+	;
+	(
+		InitialQuery=ListQuery
+	)
+	),
 	%InitialQuery=..[q|InitialQueryExpanded],
-	InitialQuery=InitialQueryExpanded,
+%	InitialQuery=InitialQueryExpanded,
 %	writeln(InitialQuery),
 %	duplicate_term(PosEvidence,GPosEvidence),
 %	duplicate_term(ListQuery,GQuery),
-	
 %	writeln(GPosEvidence),
 %	writeln(GQuery),
 	bb_put(sample_sum,0.0),
@@ -4802,73 +5829,23 @@ eval_query_backward_lw(PosEvidence,NegEvidence,Query1,X,N,P,Succ_Sum,Sum) :-
 %	user:proposals,
 	I=sampledtemp,%I,
 	test_to_list(PosEvidenceTuple,PosEvidence),
-%	expandquery(PosEvidence,InitialPosEvidenceExpanded),
-	InitialPosEvidenceExpanded=PosEvidence,
-	InitialPosEvidence=PosEvidence,
+	(Expand==true ->
+	(
+		expandquery5(PosEvidence,InitialPosEvidence)
+	)
+	;
+	(
+		InitialPosEvidence=PosEvidence
+	)
+	),
 	%InitialPosEvidence=..[q|InitialPosEvidenceExpanded],
-%	writeln(InitialPosEvidenceExpanded),
+%	writeln(InitialPosEvidence),
 %	length(InitialQueryExpanded,NQQ),
 %	length(InitialPosEvidenceExpanded,NPE),
 	
 	(between(1,N,_),
 	main_evalquery_lw(NPE,NQQ,X,I,PosEvidence,NegEvidence,InitialPosEvidence,PosEvidenceTuple,Query,InitialQuery),
-	/*(
-		
-		%recorda(proposal,proposalprob(I,1.0),_),
-		eraseall(I),
-%		eraseall(sampledtemp),
-		abolish_all_tables,
-%		bb_put(queryevidence,1),
-%		check_evidence_backward(sampled,PosEvidence,W1),
-		
-		(
-		PosEvidence\=[]->
-		(
-			bb_put(q,InitialPosEvidence),
-			bb_put(wevidence,1.0),
-			
-			% GPosEvidence has to be ground in variable name
-			proof_query_backward_lw(I,PosEvidenceTuple),
-			bb_delete(wevidence,W1)
-		)
-		;
-			W1=1
-		),
-		W1>0,
-		check_evidence(I,PosEvidence,NegEvidence),
-		
-		bb_get(sample_sum,Old_Sum),
-		New_Sum is Old_Sum + W1,
-		bb_put(sample_sum,New_Sum),
-		bb_put(q,InitialQuery),
-%		bb_put(queryevidence,query),
-		(
-			%(check_evidence_backward(sampled,[Query],W2),check_evidence(sampled,[Query],[])) %
-			(bb_put(wevidence,1.0),
-			proof_query_backward_lw(I,Query),
-			bb_delete(wevidence,W2)) %,check_evidence(sampled,ListQuery,[]))
-			%proof_query_backward_eval(sampled,sampledtemp,Query,W2)
-			->
-			(
-				%W2=1.0,
-				%write('ok w: '),
-				%check_evidence(sampled,PosEvidence,NegEvidence),
-				%write(Query),nl,
-				%(check_evidence(sampled,Query,[])->true;writeln('error')),
-				bb_get(succeeding_sample_sum,Old),
-				New is Old+X*W1*W2,
-				%writeln(W2),
-				bb_put(succeeding_sample_sum,New)
-			)
-			;
-		  	true %(write('Particle '),write(I),write(' w '),writeln(W1),nl,findall(A,(recorded(sampled,A,_), write(A),nl),_),nl,writeln('------------------------------------'))%true
-		),		  	
-		(
-		get_debug(true)->
-			write('Particle '),write(I),write(' w '),writeln(W1),nl,findall(A,(recorded(I,A,_), write(A),nl),_),nl,writeln('------------------------------------');
-			true
-		)
-	),*/
+
 	fail;true),
 	%eraseall(sampled),
 	bb_delete(sample_sum,Sum),
@@ -4961,80 +5938,158 @@ defaultproposal(Head,Body,finite,finite(Distr),NewDistr) :-
 	recorda(proposal,localproposal(Head,finite(Distr),Body2,finite,NewDistr),_),
 	writeln(recorda(proposal,localproposal(Head,finite(Distr),Body2,finite,NewDistr),_)),
 	!.
-% var needs to be grounded
-eval_query_backward_lw_adapt(PosEvidence,NegEvidence,Query,N,PNew,Succ_Sum,Sum,OldP,LearnRate) :-
 
-	test_to_list(Query,ListQuery),
+defaultproposal(Head,Body,poisson,poisson(Distr),Distr) :-
+	writeln(defaultproposal(Head,Body,poisson,poisson(Distr),Distr)),
+	user:distributionalclause(Head,poisson(Distr),Body2,_),
+	duplicate_term(Body2,Body1),
+	Body=Body1,
+	recorda(proposal,localproposal(Head,poisson(Distr),Body2,poisson,Distr),_),
+	writeln(recorda(proposal,localproposal(Head,poisson(Distr),Body2,poisson,Distr),_)),
+	!.
 
-	duplicate_term(PosEvidence,GPosEvidence),
-	duplicate_term(ListQuery,GQuery),
-%	writeln(GPosEvidence),
-%	writeln(GQuery),
+% 1 dimension
+defaultproposal(Head,Body,gaussian,gaussian(M,V),(M2,V2)) :-
+	\+is_list(M),
+	writeln(defaultproposal(Head,Body,gaussian,gaussian(M,V),(M2,V2))),
+	user:distributionalclause(Head,gaussian(M,V),Body2,_),
+	duplicate_term(Body2,Body1),
+	Body=Body1,
+	M2=M,
+	V2 is 0.1+V*2,
+	recorda(proposal,localproposal(Head,gaussian(M,V),Body2,gaussian,(M2,V2)),_),
+	writeln(recorda(proposal,localproposal(Head,gaussian(M,V),Body2,gaussian,(M2,V2)),_)),
+	!.
+		
+% TO TEST! FIXME	
+main_evalquery_lw_adapt(W1,DX,X,I,PosEvidence,NegEvidence,InitialPosEvidence,PosEvidenceTuple,Query,InitialQuery) :-
+	recorda(proposal,proposalprob(I,1.0),_),
+	(
+	eraseall(I),
+	abolish_all_tables,
+	
+	(
+	PosEvidence\=[]->
+	(
+		bb_put(q,InitialPosEvidence),
+		%bb_put(nq,NPE),
+		bb_put(wevidence,1.0),
+		bb_put(dx,0),
+		% GPosEvidence has to be ground in variable name
+		proof_query_backward_lw_adapt(I,PosEvidenceTuple),
+		bb_delete(wevidence,W1),
+		bb_delete(dx,DX)
+%		writeln(e(W1,DX))
+	)
+	;
+		(
+		DX=0,
+		W1=1
+		)
+	),
+	W1>0,
+	bb_get(dxe,DXE),
+	DXE>=DX,
+	
+	(DXE>DX ->
+		(
+		check_evidence(I,PosEvidence,NegEvidence),
+		bb_put(sample_sum,W1),
+		%bb_put(succeeding_sample_sum,0),
+		bb_put(dxe,DX)
+		)
+		;
+		(
+		check_evidence(I,PosEvidence,NegEvidence),
+		bb_get(sample_sum,Old_Sum),
+		New_Sum is Old_Sum + W1,
+		bb_put(sample_sum,New_Sum)
+			
+		)
+	),
+
+%	writeln(InitialQuery),
+	bb_put(q,InitialQuery),
+%	bb_put(nq,NQQ),
+	
+	(
+		(bb_put(wevidence,1.0),bb_put(dx,0),
+		proof_query_backward_lw_adapt(I,Query),
+		bb_delete(wevidence,W2),
+		bb_get(dxq,DXEQ),bb_get(dx,DX2),DXEQ>=DX+DX2)
+		->
+		(
+			/*bb_get(dxq,DXEQ),
+			bb_get(dx,DX2),
+			DXEQ>=DX+DX2,*/
+			(DXEQ>DX+DX2 ->
+				(
+					%writeln(NW is X*W1*W2),
+					NW is X*W1*W2,
+					bb_put(succeeding_sample_sum,NW),
+					NEWDXEQ is DX+DX2,
+					bb_put(dxq,NEWDXEQ)
+					%writeln((Query,NW))
+				)
+				;
+				(
+					bb_get(succeeding_sample_sum,Old),
+					New is Old+X*W1*W2,
+					bb_put(succeeding_sample_sum,New)
+				)
+			),
+			Wi is W1*W2,
+			recorda(proposal,wi(I,Wi),_) % FIXME put the dx or set wi=0 when DXEQ>DX+DX2
+		)
+		;
+	  	recorda(proposal,wi(I,0),_) %(write('Particle '),write(I),write(' w '),writeln(W1),nl,findall(A,(recorded(sampled,A,_), write(A),nl),_),nl,writeln('------------------------------------'))%true
+	),		  	
+	(
+	get_debug(true)->
+		writeln(Query),write('Particle '),write(I),write(' w '),writeln(W1),nl,findall(A,(recorded(I,A,_), write(A),nl),_),nl,writeln('------------------------------------');
+		true
+	)
+	),!.
+% TO TEST! FIXME
+eval_query_backward_lw_adapt(E,NegEvidence,Q,X,N,PNew,Succ_Sum,Sum,OldP,LearnRate) :-
+	duplicate_term(E,PosEvidence),
+	duplicate_term((Q,X),(Query1,X)),
+	(is_list(Query1)->
+	(test_to_list(Query,Query1),ListQuery=Query1)
+	;
+	(test_to_list(Query1,ListQuery),Query1=Query)
+	),
+	query_propagation(Expand),
+	(Expand==true ->
+	(
+		expandquery5(ListQuery,InitialQuery)
+	)
+	;
+	(
+		InitialQuery=ListQuery
+	)
+	),
 	bb_put(sample_sum,0.0),
 	bb_put(succeeding_sample_sum,0.0),
+	bb_put(dxe,10000), % should be infinite
+	bb_put(dxq,10000), % should be infinite
+%	I=sampledtemp,%I,
+	test_to_list(PosEvidenceTuple,PosEvidence),
+	(Expand==true ->
+	(
+		expandquery5(PosEvidence,InitialPosEvidence)
+	)
+	;
+	(
+		InitialPosEvidence=PosEvidence
+	)
+	),
+	
 	(recorded(proposal,proposalprob(_,_),Ref),erase(Ref),fail;true),
 	(recorded(proposal,wi(_,_),Ref),erase(Ref),fail;true),
 	(recorded(proposal,relderivative(_,_,_,_,_,_),Ref),erase(Ref),fail;true),
-	forall(	between(1,N,I),(
-	(
-		recorda(proposal,proposalprob(I,1.0),_),
-		eraseall(I),
-%		eraseall(sampledtemp),
-		
-		abolish_all_tables,
-		
-%		bb_put(queryevidence,1),
-%		check_evidence_backward(sampled,PosEvidence,W1),
-		(
-		PosEvidence\=[]->
-		(
-			bb_put(wevidence,1.0),
-			test_to_list(PosEvidence1,PosEvidence),
-			% GPosEvidence has to be ground in variable name
-			proof_query_backward_lw_adapt(I,PosEvidence1,GPosEvidence),
-			bb_delete(wevidence,W1)
-		)
-		;
-			W1=1
-		),
-		W1>0,
-		check_evidence(I,PosEvidence,NegEvidence),
-		
-		bb_get(sample_sum,Old_Sum),
-		New_Sum is Old_Sum + W1,
-		bb_put(sample_sum,New_Sum),
-
-%		bb_put(queryevidence,query),
-		(
-			%(check_evidence_backward(sampled,[Query],W2),check_evidence(sampled,[Query],[])) %
-			(bb_put(wevidence,1.0),
-			proof_query_backward_lw_adapt(I,Query,GQuery),
-			bb_delete(wevidence,W2)) %,check_evidence(sampled,ListQuery,[]))
-			%proof_query_backward_eval(sampled,sampledtemp,Query,W2)
-			->
-			(
-				
-				%W2=1.0,
-				%write('ok w: '),
-				%check_evidence(sampled,PosEvidence,NegEvidence),
-				%write(Query),nl,
-				%(check_evidence(sampled,Query,[])->true;writeln('error')),
-				bb_get(succeeding_sample_sum,Old),
-				New is Old+W1*W2,
-				%writeln(W2),
-				bb_put(succeeding_sample_sum,New),
-				Wi is W1*W2,
-				recorda(proposal,wi(I,Wi),_)
-			)
-			;
-		  	recorda(proposal,wi(I,0),_) %(write('Particle '),write(I),write(' w '),writeln(W1),nl,findall(A,(recorded(sampled,A,_), write(A),nl),_),nl,writeln('------------------------------------'))%true
-		),		  	
-		(
-		get_debug(true)->
-			write('Particle '),write(I),write(' w '),writeln(W1),nl,findall(A,(recorded(I,A,_), write(A),nl),_),nl,writeln('------------------------------------');
-			true
-		)
-	);true) ),
+	forall(	between(1,N,I),
+	(main_evalquery_lw_adapt(NPE,NQQ,X,I,PosEvidence,NegEvidence,InitialPosEvidence,PosEvidenceTuple,Query,InitialQuery);true) ),
 	%eraseall(sampled),
 	
 	bb_delete(sample_sum,Sum),
@@ -5047,7 +6102,8 @@ eval_query_backward_lw_adapt(PosEvidence,NegEvidence,Query,N,PNew,Succ_Sum,Sum,O
 	writeln(PNew is OldP*(1-LearnRate)+LearnRate*P),
 	Diff is abs(P-OldP)/(P+OldP)*2*100,
 	write('diff% : '),writeln(Diff),
-	computenewproposal(N,PNew,5),
+	Rate is 0.2,
+	computenewproposal(N,PNew,Rate),
 	!.
 % finite distribution
 computenewproposal(N,G,Rate) :-
@@ -5056,7 +6112,8 @@ computenewproposal(N,G,Rate) :-
 		recorded(proposal,localproposal(Head,OrigDistr,Body,TypeD,PropD),OldR)),
 	(
 		
-		TypeD==finite,
+		TypeD==finite ->
+		(
 		length(PropD,Dim),
 		findall(NewP:Val,
 		(
@@ -5070,9 +6127,10 @@ computenewproposal(N,G,Rate) :-
 				%writeln(wi(I,Wi)),
 				%writeln(localproposal(Head,OrigDistr,Body,TypeD,PropD)),
 				(recorded(proposal,relderivative(I,Head,OrigDistr,Body,Val,RelDer),_) -> true;RelDer=0),
-				
+				%writeln(I:Val:RelDer),
 				bb_get(tmp,OldD),
 				NewD is OldD+RelDer*ProbPi*(1-Wi/G),
+				
 				bb_put(tmp,NewD)
 			)),
 			bb_delete(tmp,Deriv),
@@ -5080,10 +6138,80 @@ computenewproposal(N,G,Rate) :-
 			
 			NewP is min(max(0.001/Dim,OldP-Rate*NDer),10000/Dim)
 		),List),
+		%writeln(deriv(List)),
 		normalize(List,NormDistr),
 		erase(OldR),
 		recorda(proposal,localproposal(Head,OrigDistr,Body,TypeD,NormDistr),_),
 		writeln((Head,NormDistr))
+		)
+		;
+		(
+			TypeD==poisson ->
+			(
+			
+			bb_put(tmp,0.0),
+			forall((between(1,N,I),recorded(proposal,relderivative(I,Head,OrigDistr,Body,Val,RelDer),_)),
+			(
+				recorded(proposal,proposalprob(I,ProbPi),_),
+				recorded(proposal,wi(I,Wi),_),
+				%writeln(proposalprob(I,ProbPi)),
+				%writeln(wi(I,Wi)),
+				%writeln(localproposal(Head,OrigDistr,Body,TypeD,PropD)),
+				%(recorded(proposal,relderivative(I,Head,OrigDistr,Body,Val,RelDer),_) -> true;RelDer=0),
+				%writeln(I:Val:RelDer),
+				bb_get(tmp,OldD),
+				NewD is OldD+RelDer*ProbPi*(1-Wi/G),
+				
+				bb_put(tmp,NewD)
+			)),
+			bb_delete(tmp,Deriv),
+			NDer is Deriv/N,
+			
+			NewP is PropD-Rate*NDer,
+			
+			erase(OldR),
+			recorda(proposal,localproposal(Head,OrigDistr,Body,TypeD,NewP),_),
+			writeln((Head,NewP))
+			)
+			;
+			(
+				TypeD==gaussian ->
+				(
+				
+				bb_put(tmpm,0.0),
+				bb_put(tmpv,0.0),
+				forall((between(1,N,I),recorded(proposal,relderivative(I,Head,OrigDistr,Body,Val,(RelDerM,RelDerV)),_)),
+				(
+					recorded(proposal,proposalprob(I,ProbPi),_),
+					recorded(proposal,wi(I,Wi),_),
+					%writeln(proposalprob(I,ProbPi)),
+					%writeln(wi(I,Wi)),
+					%writeln(localproposal(Head,OrigDistr,Body,TypeD,PropD)),
+					%(recorded(proposal,relderivative(I,Head,OrigDistr,Body,Val,RelDer),_) -> true;RelDer=0),
+					%writeln(I:Val:RelDer),
+					bb_get(tmpm,OldDM),
+					bb_get(tmpv,OldDV),
+					NewDM is OldDM+RelDerM*ProbPi*(1-Wi/G),
+					NewDV is OldDV+RelDerV*ProbPi*(1-Wi/G),
+					bb_put(tmpm,NewDM),
+					bb_put(tmpv,NewDV)
+				)),
+				bb_delete(tmpm,DerivM),
+				bb_delete(tmpv,DerivV),
+				NDerM is DerivM/N,
+				NDerV is DerivV/N,
+				PropD=(M,V),
+				NewM is M-Rate*NDerM,
+				NewV is e^(log(V)-Rate*NDerV),
+				erase(OldR),
+				recorda(proposal,localproposal(Head,OrigDistr,Body,TypeD,(NewM,NewV)),_),
+				writeln(new(Head,(NewM,NewV)))
+				)
+				;
+					fail
+			)
+		
+		)
 	)).
 	
 
@@ -5176,7 +6304,7 @@ proof_query_backward_lazy(Key,A) :-
 % TO CHECK
 proof_query_backward_lazy(Key,\+A) :-
 	\+proof_query_backward_lazy(Key,A),!.	
-
+/*
 proof_query_backward_lazy(Key,A) :-
 	ground(A),
 %	A\= _~= distribution(_),
@@ -5192,7 +6320,7 @@ proof_query_backward_lazy(Key,H ~= S) :-
 	recorda(Key,H ~= Val,_),
 	S=Val,
 	!.
-	
+	*/
 proof_query_backward_lazy(Key,A) :-
 	recorded(Key,A,_),
 	A\= _~= distribution(_).
@@ -5204,7 +6332,7 @@ proof_query_backward_lazy(Key,H ~= S) :-
 	sample(D,Val),
 	erase(R),
 	(
-	(\+erased(R),recorded(Key,H ~= V,_)) -> % TO TEST
+/*	(\+erased(R),recorded(Key,H ~= V,_)) -> % TO TEST
 		(
 			V=S,
 			writeln('warning '),
@@ -5213,7 +6341,7 @@ proof_query_backward_lazy(Key,H ~= S) :-
 			dcpf:printkeyp(Key),nl,
 			erase(R)
 		)
-		;
+		;*/
 		(
 		recorda(Key,H ~= Val,_),
 		S=Val
@@ -5848,29 +6976,34 @@ query_proof_setRao(Key,A,Var,Val,Ignore) :-
 		)
 	).
 	
-	
+% does not work with grounded conditions	
 proof_query_backward_lifted(Key,next(Head)) :-
 	user:distributionalclause(next(Head),Distribution,Body,_),
+	Head\=observation(_),
  	proof_query_backward_clause(Key,Body,Body2,ListDistributions),
- 	%writeln(proof_query_backward_clause(Key,Body,Body2,ListDistributions)),
+	writeln(proof_query_backward_clause(Key,Body,Body2,ListDistributions)),
 	%\+ground(Body2),
 	computeDistribution(Distribution,ListDistributions,NewDistr),
 	test_to_list(NewBody,Body2),
 	\+recorded(Key,distributionalclause(next(Head),_,NewBody,_),_),
-	recorda(Key,distributionalclause(next(Head),NewDistr,NewBody,0),_).
-	%writeln(distributionalclause(next(Head),NewDistr,NewBody,0)).
-	
+	recorda(Key,distributionalclause(next(Head),NewDistr,NewBody,0),_),
+	writeln(distributionalclause(next(Head),NewDistr,NewBody,0)).
+
+% incomplete works with a single clause prior
 proof_query_backward_lifted2(Key,next(Head)) :-
-	
 	user:distributionalclause(next(Head),_,_,_),
 	\+ground(Head),
+	Head\=observation(_),
 	bb_put(l,finite([])),
-	findall(W:D,(user:distributionalclause(next(Head),D,Body,_),
- 	proof_query_backward_clause2(Key,Body,W),bb_get(l,OL),sum_distrib(OL,D,W,Sum),bb_put(l,Sum)),L),
+	findall(Head:B,(user:distributionalclause(next(Head),D,Body,_),
+ 	proof_query_backward_clause3(Key,Body,W,B),bb_get(l,OL),sum_distrib(OL,D,W,Sum),bb_put(l,Sum)),[HH:BB|_]),
  	bb_delete(l,LL),LL\=finite([]),%writeln(LL),
 	
-	\+recorded(Key,distributionalclause(next(Head),_,true,_),_),
-	recorda(Key,distributionalclause(next(Head),LL,true,0),_).
+	HH=Head,
+	test_to_list(NewBody,BB),%taking the first element as body (conditions)
+%	writeln(Head:NewBody),
+	\+recorded(Key,distributionalclause(next(Head),_,NewBody,_),_),
+	recorda(Key,distributionalclause(next(Head),LL,NewBody,0),_).%,
 %	writeln(distributionalclause(next(Head),LL,true,0)),dcpf:printp(1).
 	
 % New inference
@@ -6750,7 +7883,7 @@ distributionalclause:partialproof(1,\+ reward ~= _,L).
 */
 % partial proof
 
-
+/*
 partialproof(Key,A,ListClean3) :-
 	abolish_all_tables,
 	partialproof_query_backward(Key,A,List),
@@ -6799,57 +7932,61 @@ regressionproof(Key,Reward,NextState,ListClean3) :-
 	test_to_list(TruePruned,TrueList2),
 %	writeln((TruePruned,ListClean2)),
 	cleanformula2((TruePruned,ListClean2),ListClean3).
-
+*/
 partialproof3(Key,A,ListClean3) :-
 	abolish_all_tables,
+	eraseall(tempabstract),
 
-	partialproof_det(Key,A,List), % regression over deterministic proof
-	
-	cleanformula(List,ListClean),
-	partialproof_true(Key,ListClean,_,True2),
+	partialproof_det(Key,A,List), % regression
+%	partialproof_query_backward(Key,A,List2),
+%	(List\=List2 ->(trace);true),
+%	cleanformula(List,ListClean),
+	partialproof_true(Key,List,_,True2),
 	flatten(True2,TrueList2),
+	writeln(partialproof_true_before(List)),
+	writeln(partialproof_true_after(TrueList2)),
+	
 	remove_duplicates(TrueList2, TrueList3),
-	partialproof_removetrue2(Key,ListClean,ListClean2,TrueList3),
+%	partialproof_removetrue2(Key,ListClean,ListClean2,TrueList3),
 %	writeln(l(ListClean2)),
 %	writeln(True),
-	flatten(TrueList3,TrueList4),
+%	flatten(TrueList3,TrueList4),
 %	writeln(t(TrueList4)),
-	remove_duplicates(TrueList4, TrueList5),
-	test_to_list(TruePruned,TrueList5),
+%	remove_duplicates(TrueList4, TrueList5),
+	test_to_list(TruePruned,TrueList3),
 
-	cleanformula2((TruePruned,ListClean2),ListClean3).	
+	cleanformula2(TruePruned,ListClean3),
+	(query_proof(Key,ListClean3)->true;(query_proof(Key,ListClean3),halt)),
+	writeln(partialproof3(ListClean3)),nl.	
 	
-regressionproof3(Key,Reward,NextState,ListClean3) :-
+regressionproof3(Key,Reward,NextState,TupleNextproofClean) :-
 	abolish_all_tables,
-	partialproof_query_backward(Key,NextState,ListNextState),
-%	writeln(nextstate(Key,NextState,ListNextState)),
-	cleanformula(ListNextState,ListNextState1),
-%	writeln(cleanformula(ListNextState,ListNextState1)),
-	partialproof_true(Key,ListNextState1,_,TrueNext),
-	flatten(TrueNext,TrueNextList),
-	remove_duplicates(TrueNextList, TrueNextList2),%trace,
-%	writeln(trueNextList(TrueNextList2)),
-	partialproof_det(Key,Reward,ListReward,TrueNextList2),
-%	writeln(partialproof_det(Key,Reward,ListReward,TrueNextList2)),
+	/*
+	eraseall(testneg),
+	(query_proof_neg(Key,testneg,(NextState,Reward));true),
+	writeln(testneg),dcpf:printkeyp(testneg),nl,
+	findall(F,recorded(testneg,F,_),ListNextStateRew),
+	trace,*/
+	eraseall(tempabstract),
+	partialproof_det(Key,(NextState,Reward),ListNextStateRew), % regression next abstracted state
+	(query_proof(Key,(NextState,Reward))->true;(writeln(query_proof(Key,(NextState,Reward))),halt)),
+%	simplifyformula(ListNextStateRew,ListNextStateRew2),
 	
-	cleanformula((ListReward,ListNextState),ListClean),
+		
+	partialproof_true(Key,ListNextStateRew,_,TrueNext),
+	flatten(TrueNext,TrueNextList),
+	writeln(partialproof_true_before(ListNextStateRew)),
+	writeln(partialproof_true_after(TrueNext)),
+	
+	remove_duplicates(TrueNextList, TrueNextList2),
+	test_to_list(TupleNextproof,TrueNextList2),
+	cleanformula2(TupleNextproof,TupleNextproofClean),
+	recorded(Key,action(Action),_),
+	writeln(action(Action)),
+	writeln(initialfacts(NextState,Reward)),
+	writeln(regressionproof3(Key,TupleNextproofClean)),nl.
 
-	partialproof_true(Key,ListClean,_,True2),
-	flatten(True2,TrueList2),
-	remove_duplicates(TrueList2, TrueList3),
-%	writeln(ListClean),nl,
-%	writeln(beforetrue2(ListClean)),
-	partialproof_removetrue2(Key,ListClean,ListClean2,TrueList3),
-%	writeln(partialproof_removetrue2(Key,ListClean,ListClean2,TrueList3)),
-	test_to_list(TrueList4,TrueList3),
-%	writeln(beforefinal(TrueList4,ListClean2)),
-	cleanformula2((TrueList4,ListClean2),ListClean3).
-%	writeln(final(ListClean3)),nl.
-/*
-	flatten(True,TrueList),
-	remove_duplicates(TrueList, TrueList2),
-	test_to_list(TruePruned,TrueList2),
-	cleanformula2((TruePruned,ListClean2),ListClean3).*/
+%	dcpf:printkeyp(tempabstract),nl.
 	
 cleanformula2(L1,L3) :-
 	cleanformula(L1,L2),
@@ -6887,6 +8024,11 @@ current2next(Key,(A,B),(AA,BB)) :-
 	current2next(Key,A,AA),
 	current2next(Key,B,BB).
 
+current2next(Key,(A;B),(AA;BB)) :-
+	!,
+	(current2next(Key,A,AA);
+	current2next(Key,B,BB)).
+	
 current2next(Key,[A|B],[AA|BB]) :-
 	!,
 	current2next(Key,A,AA),
@@ -6941,66 +8083,27 @@ cleanformula([A|B],[AA|BB]) :-
 	
 cleanformula(A,A) :- !.
 
-
-partialproof_query_backward(Key,true,true) :-
-	!.
+recfact(_,_):-!.
+recfact(Key,(Fact,H)) :-
+	!,
+	(
+	recorded(Key,Fact,_)->
+		true
+	;
+		recorda(Key,Fact,_)
+	),
+	recfact(Key,H),!.
 	
-partialproof_query_backward(Key,(A,B),NewList) :-
-	!,
-	partialproof_query_backward(Key,A,L1),
-	partialproof_query_backward(Key,B,L2),
-	flt(L1,L2,NewList).
-
-
-% INCOMPLETE put union of the list!
-partialproof_query_backward(Key,findall_forward(X,Y,Z),true) :-
-%	findall(X,partialproof_query_backward(Key,Y,LI),Z),
-	writeln('INCOMPLETE put union of the list!'),halt,
+recfact(Key,Fact) :-
+	(
+	recorded(Key,Fact,_)->
+		true
+	;
+		recorda(Key,Fact,_)
+	),
 	!.
 
-
-
-partialproof_query_backward(Key,\+A,true) :-
-	user:builtin(A),
-	!,
-	\+user:A.
-		
-partialproof_query_backward(Key,A,true) :-
-%	A\=(\+_),
-	user:builtin(A),
-	!,
-	user:A.
-
-partialproof_query_backward(Key,\+A,\+ L) :-
-	\+recorded(Key,A,_),
-%	trace,writeln(A),
-	partialproof_negation(Key,A,AA),
-	partialproof_removetrue(Key,AA,L,True1),
-	!.
-
-partialproof_query_backward(Key,A ~= V,ProofA) :-
-	recorded(Key,A ~= V,_),
-	((tabling_partialproof_query_backward(Key,A,D,ProofA),likelihood_weighting(V,D,WVal),WVal>0)->true;ProofA= (A ~= V) ).
-
-partialproof_query_backward(Key,A,ProofA) :-
-	recorded(Key,A,_),
-	A\=(_ ~= _),
-	(tabling_partialproof_query_backward(Key,A,ProofA)->true;ProofA=A).
-
-
-tabling_partialproof_query_backward(Key,Head,Distribution,L) :-
-	user:distributionalclause(Head,Distribution,Body,_),
-	query_proof(Key,Body),
- 	partialproof_query_backward(Key,Body,L).
-
-	
-tabling_partialproof_query_backward(Key,Head,L) :-
-	user:hardclause(Head,Body,_),
-	query_proof(Key,Body),
-	partialproof_query_backward(Key,Body,L).
-
-
-% proof for reward, regression over deterministic proof
+% regression over  proof
 partialproof_det(Key,true,true) :-
 	!.
 	
@@ -7010,10 +8113,31 @@ partialproof_det(Key,(A,B),NewList) :-
 	partialproof_det(Key,B,L2),
 	flt(L1,L2,NewList).
 
+partialproof_det(Key,(A;B),(L1;L2)) :-
+	!,
+	partialproof_det(Key,A,L1),
+	partialproof_det(Key,B,L2).
+
 partialproof_det(Key,\+A,true) :-
 	user:builtin(A),
 	!,
 	\+user:A.
+
+
+partialproof_det(Key,findall_forward(A,Query,_),Tuple) :-
+	/*eraseall(testneg),
+	trace,
+	(query_proof_neg(Key,testneg,Query),fail;true),
+	writeln(testneg),dcpf:printkeyp(testneg),nl,
+	findall(F,recorded(testneg,F,_),ListFtest),
+	test_to_list(Proof,ListFtest),
+	*/
+	
+	findall(Q,query_proof3(Key,Query,Q),List), %FIXME
+	
+	findall(ProofF,(member(Fact,List),distributionalclause:partialproof_det(Key,Fact,ProofF)),ListF),
+%	writeln(ListF),
+	test_to_list(Tuple,ListF).
 		
 partialproof_det(Key,A,true) :-
 %	A\=(\+_),
@@ -7021,186 +8145,156 @@ partialproof_det(Key,A,true) :-
 	!,
 	user:A.
 
-partialproof_det(Key,\+A,\+L) :-
+partialproof_det(Key,A,true) :-
+	recorded(tempabstract,A,_),
+	!.
+	
+partialproof_det(Key,\+A,L) :-
 	\+query_proof(Key,A),
-	partialproof_negation(Key,A,AA),
-	partialproof_removetrue(Key,AA,L,True1).
+%	writeln(proving(\+A)),
+%	query_proof_neg2(Key,\+A,L),
+%	writeln(query_proof_neg2(L)),
+	partialproof_negation(Key,\+A,L),
+	recfact(tempabstract,(\+A,L)).
 
 partialproof_det(Key,A ~= V,ProofA) :-
 	recorded(Key,A ~= V,_),
-	((tabling_partialproof_det(Key,A,D,ProofA),likelihood_weighting(V,D,WVal),WVal is 1.0)->true;ProofA= (A ~= V) ).
+%	writeln(proving(A ~= V)),
+	((tabling_partialproof_det(Key,A,D,ProofA),(ProofA=true;(likelihood_weighting(V,D,WVal),WVal>0)) )->true;ProofA= (A ~= V) ),
+%	writeln(proof1(fact(A ~= V),ProofA)),
+	recfact(tempabstract,(A ~= V,ProofA)).
 
 partialproof_det(Key,A,ProofA) :-
 	recorded(Key,A,_),
 	A\=(_ ~= _),
-	(tabling_partialproof_det(Key,A,ProofA)->true;ProofA=A).
-
+%	writeln(proving(A)),
+	(tabling_partialproof_det(Key,A,ProofA)->true;ProofA=A),
+%	writeln(proof1(fact(A) ,ProofA)),
+	recfact(tempabstract,(A,ProofA)).
 
 tabling_partialproof_det(Key,Head,Distribution,L) :-
-	findall(Body,(user:distributionalclause(Head,Distribution,Body,_),
-			query_proof(Key,Body)),ListB),
-	sample(uniform(ListB),Body),
-%	writeln(sample(uniform(ListB),Body)),trace,
- 	partialproof_det(Key,Body,L).
-
-	
-tabling_partialproof_det(Key,Head,L) :-
-	findall(Body,(user:hardclause(Head,Body,_),
-			query_proof(Key,Body)),ListB),
-	sample(uniform(ListB),Body),
-	partialproof_det(Key,Body,L).
-
-% ------------------
-
-partialproof_det(Key,true,true,TrueList) :-
-	!.
-	
-partialproof_det(Key,(A,B),NewList,TrueList) :-
-	!,
-	partialproof_det(Key,A,L1,TrueList),
-	partialproof_det(Key,B,L2,TrueList),
-	flt(L1,L2,NewList).
-
-partialproof_det(Key,A,true,TrueList) :-
-	member(A,TrueList).
-
-partialproof_det(Key,\+A,true,TrueList) :-
-	user:builtin(A),
-	!,
-	\+user:A.
+	(
+	(user:distributionalclause(Head,Distribution,Body,_),query_proof2(tempabstract,Body)) ->
+		(L=true)%,writeln(alreadyproved(Head)),dcpf:printkeyp(tempabstract))
+	;
+	(
+%		query_proof(Key,Body),
 		
-partialproof_det(Key,A,true,TrueList) :-
-%	A\=(\+_),
-	user:builtin(A),
-	!,
-	user:A.
+		findall(Body,(user:distributionalclause(Head,Distribution,Body,_),
+			distributionalclause:query_proof(Key,Body)),ListB),
+		ListB\=[],
+		writeln(listproofs(Head~=_,ListB)),
+		sample(uniform(ListB),Body1),
+		writeln(selectedproof(Body1)),
+	 	partialproof_det(Key,Body1,L)%,
+	 	%writeln(reg(Head,Body1,' ',L))
+ 	)
+ 	).
 
-partialproof_det(Key,\+A,\+L,TrueList) :-
-	\+query_proof(Key,A),
-	partialproof_negation(Key,A,AA),
-	partialproof_removetrue(Key,AA,L,True1).
-
-partialproof_det(Key,A ~= V,ProofA,TrueList) :-
-	recorded(Key,A ~= V,_),\+member(A ~= V,TrueList),
-	((tabling_partialproof_det2(Key,A,D,ProofA,TrueList),likelihood_weighting(V,D,WVal),WVal is 1.0)->true;ProofA= (A ~= V) ).
-
-partialproof_det(Key,A,ProofA,TrueList) :-
-	recorded(Key,A,_),\+member(A,TrueList),
-	A\=(_ ~= _),
-	(tabling_partialproof_det2(Key,A,ProofA,TrueList)->true;ProofA=A).
-
-
-tabling_partialproof_det2(Key,Head,Distribution,L,TrueList) :-
-	findall(Body,(user:distributionalclause(Head,Distribution,Body,_),
-			query_proof(Key,Body)),ListB),
-	sample(uniform(ListB),Body),
- 	partialproof_det(Key,Body,L,TrueList).
-
-	
-tabling_partialproof_det2(Key,Head,L,TrueList) :-
+tabling_partialproof_det(Key,Head,L) :-
+	(
+	(user:hardclause(Head,Body,_),query_proof2(tempabstract,Body))->
+		(L=true)
+	;
+	(
 	findall(Body,(user:hardclause(Head,Body,_),
-			query_proof(Key,Body)),ListB),
-	sample(uniform(ListB),Body),
-	partialproof_det(Key,Body,L,TrueList).
+			distributionalclause:query_proof(Key,Body)),ListB),
+	ListB\=[],
+%	writeln(listproofs(Head,ListB)),
+	sample(uniform(ListB),Body), % sample 1 possible proof
+%	writeln(selectedproof(Body)),
+	partialproof_det(Key,Body,L)
+	)
+	).
 
 
-% -----
-
-% partialproof_removetrue
-
-partialproof_removetrue(Key,true,true,true) :-
+query_proof2(Key,true) :-
 	!.
-partialproof_removetrue(Key,[],[],[]) :-
-	!.	
-partialproof_removetrue(Key,(A,B),NewList,[True1,True2]) :-
+query_proof2(Key,(A,B)) :-
 	!,
-	partialproof_removetrue(Key,A,L1,True1),
-	partialproof_removetrue(Key,B,L2,True2),
-	flt(L1,L2,NewList).
+	query_proof2(Key,A),
+	query_proof2(Key,B).
 
-partialproof_removetrue(Key,[A|B],[L1|L2],[True1|True2]) :-
-	!,
-	partialproof_removetrue(Key,A,L1,True1),
-	partialproof_removetrue(Key,B,L2,True2).
-	
-partialproof_removetrue(Key,\+A,\+L,True) :-
-	partialproof_removetrue(Key,A,L,True),!.
-
-partialproof_removetrue(Key,A,true,B) :-
-	ground(A),
-	recorded(Key,A,_),
-	(A=action(_) -> B=true ; B=A),!.
-
-% not storing random variables with mismatch value.
-partialproof_removetrue(Key,A~=V,false,true) :-
-	ground(A),
-	recorded(Key,A~=V2,_),V\=V2,!.
-
-partialproof_removetrue(Key,A,A,true) :-
-	!.%(\+recorded(Key,A,_);\+ground(A)),!.
-
-
-%% remove atoms in the list True
-partialproof_removetrue2(Key,true,true,_) :-
-	!.
-partialproof_removetrue2(Key,[],[],_) :-
-	!.	
-partialproof_removetrue2(Key,(A,B),NewList,True) :-
-	!,
-	partialproof_removetrue2(Key,A,L1,True),
-	partialproof_removetrue2(Key,B,L2,True),
-	flt(L1,L2,NewList).
-
-partialproof_removetrue2(Key,[A|B],[L1|L2],True) :-
-	!,
-	partialproof_removetrue2(Key,A,L1,True),
-	partialproof_removetrue2(Key,B,L2,True).
-	
-partialproof_removetrue2(Key,\+A,\+L,True) :-
-	partialproof_removetrue2(Key,A,L,True),!.
-
-partialproof_removetrue2(Key,action(A),AA,True) :-
+% negation, to check
+query_proof2(Key,\+A) :-
 	(
-	recorded(Key,action(A),_) ->
-	AA=true
-	;
-	AA=false
-	),!.
-
-partialproof_removetrue2(Key,\+action(A),AA,True) :-
-	(
-	recorded(Key,action(A),_) ->
-	AA=false
-	;
-	AA=true
-	),!.
-
-
-partialproof_removetrue2(Key,A,AA,True) :-
-	user:builtin(A),
-	(
-		ground(A)->
+		user:builtin(A)
+		->
 		(
-		user:A -> AA=true;AA=false
+			\+user:A
 		)
-	;
-		AA=A
-	),
+		;
+		(
+			recorded(Key,\+A,_)
+		)
+		
+	).
+
+query_proof2(Key,A) :-
+	A\=(\+_),
+	(
+		user:builtin(A)
+		->
+		(
+			user:A
+		)
+		;
+		(
+			A=findall_forward(X,Y,Z)
+			->
+				fail
+				;
+				recorded(Key,A,_)
+		)
+	).
+
+
+% ignore builtin
+query_proof3(Key,true,true) :-
 	!.
+query_proof3(Key,(A,B),(C,D)) :-
+	!,
+	query_proof3(Key,A,C),
+	query_proof3(Key,B,D).
 
-partialproof_removetrue2(Key,A,true,True) :-
-	member(A,True),!. % check if ground(A) is needed! 
+% negation, to check
+query_proof3(Key,\+A,B) :-
+	(
+		user:builtin(A)
+		->
+		(
+			B=true
+		)
+		;
+		(
+			\+recorded(Key,A,_),
+			B= (\+A)
+		)
+		
+	).
 
-% not storing random variables with mismatch value.
-partialproof_removetrue2(Key,A~=V,false,True) :-
-	member(A~=V2,True),V\=V2,!.
+query_proof3(Key,A,B) :-
+	A\=(\+_),
+	(
+		user:builtin(A)
+		->
+		(
+			B=true
+		)
+		;
+		(
+			A=findall_forward(X,Y,Z)
+			->
+				halt %findall(X,query_proof3(Key,Y),Z)
+				;
+				(
+					recorded(Key,A,_),
+					B=A
+				)
+		)
+	).
 
-partialproof_removetrue2(Key,A,A,True) :-
-	\+member(A,True),!.
-
-%% end 2
-
-% what is true
+% remove what is trivially true (including actions)
 % partialproof_true
 
 partialproof_true(Key,true,true,true) :-
@@ -7218,24 +8312,25 @@ partialproof_true(Key,[A|B],[L1|L2],[True1|True2]) :-
 	partialproof_true(Key,A,L1,True1),
 	partialproof_true(Key,B,L2,True2).
 	
-partialproof_true(Key,\+A,\+A,true) :-
+%partialproof_true(Key,\+A,\+A,true) :-
 %	partialproof_true(Key,A,L,True),
-	!.
+%	!.
 
 partialproof_true(Key,action(A),true,true) :-!.
 partialproof_true(Key,\+action(A),true,true) :-!.
 
 partialproof_true(Key,A,AA,B) :-
+	!,
 	(
 		ground(A) ->
 		(
-			recorded(Key,A,_) ->
+			recorded(Key,A,_) -> % tofix
 				(AA=A,B=A)
 			;
-				(AA=A,B=true)
+				(AA=A,B=A)
 		)
 		;
-		(AA=A,B=true)
+		(AA=A,B=A)
 	),!.
 %	copy_term(A,AA),
 %	recorded(Key,A,_),
@@ -7258,29 +8353,327 @@ partialproof_true(Key,A,AA,true) :-
 	),
 	!.
 
-partialproof_true(Key,A,A,true) :-
-	\+recorded(Key,A,_),!. %;\+ground(A),!.
+%partialproof_true(Key,A,A,true) :-
+%	\+recorded(Key,A,_),!. %;\+ground(A),!.
 
 
 % ---- negation
+getfalse(Key,(H,Tuple),NewTuple) :-
+	!,
+	findall(H,distributionalclause:query_proof(Key,(H,\+ Tuple)),ListH),
+	(ListH==[]->
+	(
+		getfalse(Key,Tuple,NewTuple2),
+		NewTuple=(H,NewTuple2)
+	)
+	;
+	(
+		sample(uniform(ListH),GroundH),
+		H=GroundH,
+		getfalse(Key,Tuple,NewTuple)
+	)
+	),!.
+
+getfalse(Key,H,NewH) :-
+	!,
+	findall(H,distributionalclause:query_proof(Key,H),ListH),
+	(ListH==[]->
+	(
+		NewH=H
+	)
+	;
+	(
+		sample(uniform(ListH),GroundH),
+		H=GroundH,
+		NewH=H
+	)
+	),!.
+
+groundList([]) :-!.
+groundList([H~=_|T]) :-
+	!,
+	ground(H),
+	groundList(T),!.
+
+groundList([H|T]) :-
+	( (user:builtin(H); H=action(_) ; H = (\+action(_)) ) ->
+		true
+	;
+		ground(H)
+	),
+	groundList(T),!.
+
+
+query_action(Key,Action,true) :-
+	!.
+query_action(Key,Action,(A,B)) :-
+	!,
+	query_action(Key,Action,A),
+	query_action(Key,Action,B).
+
+query_action(Key,Action,A) :-
+	(A=action(_)->
+		A=Action
+	;
+		( A= (\+action(_)) ->
+			A\=Action
+		;
+			true
+		)
+	).
+
+query_proof_neg(Key,KeyProof,true) :-
+	!.
+query_proof_neg(Key,KeyProof,(A,B)) :-
+	!,
+	query_proof_neg(Key,KeyProof,A),
+	query_proof_neg(Key,KeyProof,B).
+
+query_proof_neg(Key,KeyProof,B) :-
+	recorded(Key,action(Act),_),
+	(B\=(\+_) -> A=B; (\+A)=(B) ),
+	(
+		user:builtin(A)
+		->
+		(
+			user:B
+		)
+		;
+		(
+			A=findall_forward(X,Y,Z)
+			->
+				findall(X,query_proof_neg(Key,KeyProof,Y),Z)
+				;
+				(
+				
+				(A= Head~=_ ->
+					(
+						forall((user:distributionalclause(Head,Distribution,Body,_),query_action(Key,action(Act),Body)),(distributionalclause:query_proof_neg(Key,KeyProof,Body);true) ),
+						
+						(user:distributionalclause(Head,_,_,_) ->
+							true
+							;
+							(
+							((\+recorded(KeyProof,A,_),\+recorded(KeyProof,\+A,_),A\=action(_)) -> (query_proof(Key,A)-> recorda(KeyProof,A,_);recorda(KeyProof,\+A,_)) ;true)
+							)
+						)
+					)
+					;
+					(
+						forall((user:hardclause(A,Body,_),query_action(Key,action(Act),Body)),(distributionalclause:query_proof_neg(Key,KeyProof,Body);true)),
+						(user:hardclause(A,_,_) ->
+							true
+							;
+							((\+recorded(KeyProof,A,_),\+recorded(KeyProof,\+A,_),A\=action(_)) -> (query_proof(Key,A)-> recorda(KeyProof,A,_);recorda(KeyProof,\+A,_)) ;true)
+						)
+					)
+				),
+				
+				query_proof(Key,B)
+				)
+		)
+	).
+
+
+
+query_proof_neg2(Key,true,true) :-
+	!.
+query_proof_neg2(Key,(A,B),NewList) :-
+	!,
+	query_proof_neg2(Key,A,L1),
+	query_proof_neg2(Key,B,L2),
+	flt(L1,L2,NewList).
+
+query_proof_neg2(Key,(A;B),(L1;L2)) :-
+	!,
+	query_proof_neg2(Key,A,L1),
+	query_proof_neg2(Key,B,L2).
+	
+query_proof_neg2(Key,\+ (A,B),\+ NewList) :-
+	!,
+	query_proof_neg2(Key,A,L1),
+	query_proof_neg2(Key,B,L2),
+	flt(L1,L2,NewList).
+
+query_proof_neg2(Key,action(Act),true) :-
+	!,
+	recorded(Key,action(Act),_),
+	!.
+query_proof_neg2(Key,\+action(Act),true) :-
+	!,
+	recorded(Key,action(Act2),_),
+	Act\=Act2,
+	!.
+	
+query_proof_neg2(Key,A,Proof) :-
+	recorded(Key,action(Act),_),%writeln(Act),
+	A\=(\+_),
+	(
+		
+		A=findall_forward(X,Y,Z)
+		->
+			findall(X,query_proof_neg2(Key,KeyProof,Y),Z)
+			;
+			(
+			
+			(A= Head~=_ ->
+				(
+					findall(Reg,(user:distributionalclause(Head,Distribution,Body,_),distributionalclause:query_action(Key,action(Act),Body),%writeln(bodyfor(head(Head),Body)),
+					distributionalclause:query_proof_neg2(Key,Body,Reg)),L),
+					(user:distributionalclause(Head,_,_,_) -> ortuple(L,Proof);Proof=A)
+				)
+				;
+				(
+					findall(Reg,(user:hardclause(A,Body,_),distributionalclause:query_action(Key,action(Act),Body),%writeln(bodyfor(head(A),Body)),
+					distributionalclause:query_proof_neg2(Key,Body,Reg)),L),
+					(user:hardclause(A,_,_) -> ortuple(L,Proof);Proof=A)
+				)
+			)%writeln(neg2(Proof,L))
+		%	(L=[]-> Proof=A;ortuple(L,Proof))
+			)
+		
+	),!.
+
+query_proof_neg2(Key,\+A,Proof) :-
+	recorded(Key,action(Act),_),
+	(
+		
+		A=findall_forward(X,Y,Z)
+		->
+			findall(X,query_proof_neg2(Key,KeyProof,Y),Z)
+			;
+			(
+			
+			(A= Head~=_ ->
+				(
+					findall(\+Reg,(user:distributionalclause(Head,Distribution,Body,_),distributionalclause:query_action(Key,action(Act),Body),%writeln(bodyfor(head(Head),Body)),
+					distributionalclause:query_proof_neg2(Key,Body,Reg)),L),
+					(user:distributionalclause(Head,_,_,_) -> test_to_list(Proof,L);Proof= (\+A))
+				)
+				;
+				(
+					findall(\+Reg,(user:hardclause(A,Body,_),distributionalclause:query_action(Key,action(Act),Body),%writeln(bodyfor(head(A),Body)),
+					distributionalclause:query_proof_neg2(Key,Body,Reg)),L),
+					(user:hardclause(A,_,_) -> test_to_list(Proof,L);Proof= (\+A))
+				)
+			)
+			%(L=[]->Proof= (\+A);test_to_list(Proof,L))
+			)
+		
+	),!.
+
+ortuple([H],H) :-!.
+
+ortuple([H|T],(H;TT)) :-
+	ortuple(T,TT),!.
+
+simplifyformula((A,B),(AA,B)) :-
+	A=(_,_),
+	simplifyformula(A,AA).
+	
+simplifyformula((A,B),(A,BBB)) :-
+	replace(A,B,BB),
+	simplifyformula(BB,BBB),
+	!.
+simplifyformula(\+ (A,B),\+ (A,BBB)) :-
+	replace(A,B,BB),
+	simplifyformula(BB,BBB),
+	!.
+simplifyformula(A,A) :-
+	!.
+replace(A,(A,B),B) :-
+	!.
+
+replace(A,(A;B),true):-
+	!.
+
+replace(A,(B,C),(B,CC)) :-
+	replace(A,C,CC),
+	!.
+
 
 partialproof_negation(Key,false,false) :-
 	!.
+partialproof_negation(Key,true,true) :-
+	!.
+%partialproof_negation(Key,action(A),true) :-!.
+%partialproof_negation(Key,\+action(A),true) :-!.
+
+%partialproof_negation(Key,A,true) :-
+%	recorded(tempabstract,A,_),
+%	!.
+
+partialproof_negation(Key,\+Tuple,Proof) :-
+%	trace,
+	Tuple=(_,_),
+	test_to_list(Tuple,List1),!,
 	
-partialproof_negation(Key,(A,B),NewList) :-
-	!,
-	partialproof_negation(Key,A,L1),
-	partialproof_negation(Key,B,L2),
-	flt(L1,L2,NewList).
+	(
+	((member(action(Ac),List1)->recorded(Key,action(Ac),_);true),(member(\+action(Ac),List1)-> \+recorded(Key,action(Ac),_);true)) ->
+	(
+		/*test_to_list(Tuple1,List1),
+		trace,
+		getfalse(Key,Tuple1,Tuple2),
+		test_to_list(Tuple2,List2),*/
+		%trace,
+		
+		(groundList(List1)->
+		
+		( (member(HH,List1),recorded(tempabstract,\+HH,_))->
+			(Proof=true,writeln(provedbefore(HH)))
+			;
+			(
+				%writeln(groundList(List1)),
+				findall(Li,(
+					member(H,List1),
+					\+ distributionalclause:query_proof(Key,H), % only false facts
+					H\=action(_),
+					H\= (\+ action(_)),
+					(H= (\+ NotN) ->
+						distributionalclause:partialproof_det(Key,NotN,Li)
+					;
+						distributionalclause:partialproof_negation(Key,\+ H,Li)
+					),
+					Li\=true
+					),List),
+			%	writeln(listor(\+Tuple,List)),
+			%	flt(L1,L2,NewList),
+			%	test_to_list(NewList,List),
+				sample(uniform(List),Proof)
+			)
+		)
+		
+		;
+		
+		(
+		/*
+			eraseall(testneg),
+			(query_proof_neg(Key,testneg,Tuple);true),
+			writeln(proofof(\+Tuple)),dcpf:printkeyp(testneg),nl,
+			findall(F,recorded(testneg,F,_),ListF),
+			test_to_list(Proof,ListF)
+			*/
+			writeln('error: negation not ground'),
+			halt,
+			query_proof_neg2(Key,\+Tuple,Proof)
+		)
+		
+		)
+		
+		
+	)
+	;
+	Proof=true
+	),!.
 
 
 
-partialproof_negation(Key,\+A,\+ AA) :-
+partialproof_negation(Key,\+A,AA) :-
 	user:builtin(A),
 	(
 		ground(A)->
 		(
-		user:A-> AA=true;AA=false
+		user:A-> AA=false;AA=true
 		)
 	;
 		AA=A
@@ -7301,14 +8694,19 @@ partialproof_negation(Key,A,AA) :-
 	),
 	!.%,
 %	user:A.
-
-partialproof_negation(Key,A,true) :-
+/*
+partialproof_negation(Key,A,AA) :-
 	ground(A),
-	recorded(Key,A,_),!.
-
+	(recorded(Key,A,_)-> AA=true ; AA=false),!.
+	
+partialproof_negation(Key,\+A,AA) :-
+	ground(A),
+	(recorded(Key,A,_)-> AA=false ; AA=true),!.*/
+/*
 partialproof_negation(Key,\+A,\+ ProofA) :-
 %	recorded(Key,A,_),
 	(partialproof_negation(Key,A,L) -> ProofA=L ; ProofA=A).%findall(L,partialproof_query_backward(Key,A,L),
+*/
 
 /*
 partialproof_negation(Key,A,ProofA) :-
@@ -7320,44 +8718,100 @@ partialproof_negation(Key,A ~= V,ProofA) :-
 	V2\==V,
 	(partialproof_query_backward(Key,A ~= V2,L) -> ProofA=(A ~= V,L) ; ProofA= A ~= V). % should be add to the true list
 */	
-partialproof_negation(Key,A ~= V,ProofA1) :-
-%	\+recorded(Key,A ~= _,_),
-	copy_term(A ~= V,AA),
+partialproof_negation(Key,\+(A ~= V),ProofA1) :-
+%	writeln(proving(\+(A ~= V))),
+	(true -> %	(ground(A)->
 	(
-	(tabling_partialproof_negation(Key,A,D,ProofA),\+query_proof(Key,ProofA)) ->
-	ProofA1=ProofA
+	recorded(Key,A ~= T,_) ->
+		(
+		T\=V ->
+			distributionalclause:partialproof_det(Key,A ~= T,ProofA1)
+		;
+			(ProofA1=false,trace,writeln(partialproof_negation(Key,\+(A ~= V),ProofA1)),halt) %FIXME
+		)
 	;
 	(
-%	tabling_partialproof_negation(Key,A,D,ProofA) ->
-%		(ProofA1=true,writeln((Key,AA,ProofA)),nl)
-%	;
-	ProofA1= A ~= V
+		copy_term(A ~= V,AA),
+		(
+		(tabling_partialproof_negation(Key,A,D,ProofA),query_proof(Key,ProofA)) ->
+		ProofA1=ProofA
+		;
+		(
+	%	tabling_partialproof_negation(Key,A,D,ProofA) ->
+	%		(ProofA1=true,writeln((Key,AA,ProofA)),nl)
+	%	;
+		ProofA1= \+(A ~= V)
+		)
+		)
 	)
-	).
+	)
+	;
+	(
+			eraseall(testneg),
+			(query_proof_neg(Key,testneg,\+(A ~= V));true),
+			%writeln(testneg),dcpf:printkeyp(testneg),nl,
+			findall(F,recorded(testneg,F,_),ListF),
+			test_to_list(ProofA1,ListF)
+	)),
+	
+%	writeln(proof1(fact(\+(A ~= V)),ProofA1)),
+%	recfact(tempabstract,(\+(A ~= V),ProofA1)).
+	!.
 %	findall(Proof,(tabling_partialproof_negation(Key,A,D,Proof),\+query_proof(Key,Proof)),Lproof),
 %	(Lproof==[]-> ProofA= A ~= V ; (Lproof=[SingleP|_] -> ProofA=SingleP ; Lproof = ProofA) ). % (Lproof==[]-> ProofA= A ~= V ; (Lproof=[SingleP] -> ProofA=SingleP ; Lproof = ProofA) ).
 	
-partialproof_negation(Key,A,ProofA) :-
+partialproof_negation(Key,\+A,ProofA) :-
 %	\+recorded(Key,A,_),
 	A\=(_ ~= _),
-%	(A=action(_) ->
-%	ProofA=false; % eliminate other actions
+	%writeln(proving(\+A)),
+	(true -> % ((ground(A);A=action(_))->
 	(
 	
-	(tabling_partialproof_negation(Key,A,ProofA),\+query_proof(Key,ProofA)) ->
+	(tabling_partialproof_negation(Key,A,ProofA),query_proof(Key,ProofA)) ->
 	true
 	;
-	ProofA = A
+	ProofA = (\+A)
 		%findall(Proof,(tabling_partialproof_negation(Key,A,Proof),\+query_proof(Key,Proof)),Lproof),
 		%(Lproof==[]-> ProofA=A ; (Lproof=[SingleP|_] -> ProofA=SingleP ; Lproof = ProofA) ) % (Lproof==[]-> ProofA=A ; (Lproof=[SingleP] -> ProofA=SingleP ; Lproof = ProofA) )
-	). %(tabling_partialproof_negation(Key,A,ProofA)->true;ProofA=[]).
+	)
+	;
+	(
+		eraseall(testneg),
+		(query_proof_neg(Key,testneg,\+A);true),
+		%writeln(testneg),dcpf:printkeyp(testneg),nl,
+		findall(F,recorded(testneg,F,_),ListF),
+		test_to_list(ProofA,ListF)
+	)
+	),
+
+%	writeln(proof1(fact(\+A),ProofA)),
+%	recfact(tempabstract,(\+A,ProofA)),
+	!.
 
 
-tabling_partialproof_negation(Key,Head,Distribution,L) :-
+tabling_partialproof_negation(Key,Head,Distribution,Proof) :-
+	findall(Reg,(user:distributionalclause(Head,Distribution,Body,_),%writeln(bodyfor(head(Head),Body)),
+			distributionalclause:partialproof_negation(Key,\+ Body,Reg)),L),
+	L\=[],
+	%writeln(listnegDC(L)),
+	test_to_list(Proof,L),!.
+/*
+
 	user:distributionalclause(Head,Distribution,Body,_),
- 	partialproof_negation(Key,Body,L).
+ 	distributionalclause:partialproof_negation(Key,\+ Body,L),
 
+ 	writeln(proofof(h(Head),L)),!.
+*/
 	
-tabling_partialproof_negation(Key,Head,L) :-
-	user:hardclause(Head,Body,_),
-	partialproof_negation(Key,Body,L).
+tabling_partialproof_negation(Key,Head,Proof) :-
+%	trace,
+%	dcpf:printkeyp(Key),nl,
+	findall(Reg,(user:hardclause(Head,Body,_),%writeln(bodyfor(head(Head),Body)),
+			distributionalclause:partialproof_negation(Key,\+ Body,Reg)),L),
+	L\=[],
+	%writeln(listneg(L)),
+	test_to_list(Proof,L),!.
+%	ListB\=[],
+%	test_to_list(Bodies,ListB),
+%	user:hardclause(Head,Body,_),
+%	partialproof_negation(Key,Body,L).

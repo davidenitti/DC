@@ -109,6 +109,46 @@ test_geometric :-
 	write('geometric: '),writeln(V),
 	writeln('(partial) generated sample:'),writeln(L).
 
+
+
+% alternative geometric (requires tabling)
+flip1(_) ~ finite([0.1:true,0.9:false]).
+
+c(0) := flip1(0)~=false.
+c(N) := 
+	c(P),
+	N is P+1,
+	flip1(N)~=false.
+	
+stop(0) := flip1(0)~=true.
+stop(N) :=
+	c(P),
+	N is P+1,
+	flip1(N)~=true.
+
+test_geometric2 :-
+	generate_backward(stop(V),L),
+%	generate_backward(geometric2 ~= _,L2),
+	write('geometric: '),writeln(V),
+	writeln('(partial) generated sample:'),writeln(L).
+
+
+% alternative (inductive) definition of a geometric distribution
+flip2(0) ~ finite([0.1:true,0.9:false]).
+flip2(B) ~ finite([0.1:true,0.9:false]) :=
+	flip2(A)~=false,
+	B is A+1.
+
+geo(V) :=
+	flip2(V) ~= true.
+
+
+test_geometric3 :-
+	generate_backward(geo(V),L),
+%	generate_backward(geometric2 ~= _,L2),
+	write('geometric: '),writeln(V),
+	writeln('(partial) generated sample:'),writeln(L).
+
 geometric2 ~ val(V) := geometric(V).
 % prolog version
 geometric(V) :-
@@ -120,6 +160,7 @@ geometric(V) :-
 			V is V2+1
 		)
 	).
+
 /*
 
 (define (take-sample)

@@ -76,7 +76,7 @@ void do_putc(int c)
 	printf("%c",c);
 }
 
-static bool pl_test(void)
+static YAP_Bool pl_test(void)
 {
 /*
 	int sum=0;
@@ -159,12 +159,12 @@ static bool pl_test(void)
 	return(YAP_Unify(out,val)); // testsum([1,2,3],A).
 }
 
-static bool pl_initmap(void)
+static YAP_Bool pl_initmap(void)
 {
 	map<YAP_Term, double> *weights=new map<YAP_Term, double>;
 	return(YAP_Unify(YAP_ARG1,YAP_MkIntTerm((long)weights)));
 }
-static bool pl_addvaluemap(void)
+static YAP_Bool pl_addvaluemap(void)
 {
 	map<YAP_Term, double> *weights=(map<YAP_Term, double>*) YAP_IntOfTerm(YAP_ARG1);
 	double w;
@@ -181,7 +181,7 @@ static bool pl_addvaluemap(void)
 //	cout<<(*weights)[YAP_ARG2];
 }
 
-static bool pl_averagemap(void)
+static YAP_Bool pl_averagemap(void)
 {
 	map<YAP_Term, double> *weights=(map<YAP_Term, double>*) YAP_IntOfTerm(YAP_ARG1);
 
@@ -205,13 +205,13 @@ static bool pl_averagemap(void)
 	return(YAP_Unify(YAP_ARG2,YAP_MkFloatTerm(average) ));
 }
 
-static bool pl_deletemap(void)
+static YAP_Bool pl_deletemap(void)
 {
 	map<YAP_Term, double> *weights=(map<YAP_Term, double>*) YAP_IntOfTerm(YAP_ARG1);
 	delete weights;
 }
 
-static bool pl_discreteuniform(void) // https://www.gnu.org/software/gsl/manual/html_node/Sampling-from-a-random-number-generator.html
+static YAP_Bool pl_discreteuniform(void) // https://www.gnu.org/software/gsl/manual/html_node/Sampling-from-a-random-number-generator.html
 {
 	int n;
 
@@ -291,7 +291,7 @@ bool fillMatrix(YAP_Term t,int row,int c,Matrix &m)
 // optimal proposal distribution  for Nonlinear Gaussian State Space Models (paper On Sequential Monte Carlo Sampling Methods for Bayesian Filtering, pag 199)
 // test optimalproposal([1,0],[0.1,0,0,0.1],[1,0],[0.01],[1.1],A,B).
 // args: 1: f(x_{t-1}), 2: sigma_v, 3: C, 4: sigma_w, 5: y, 6: sampled state, 7: weight
-static bool pl_proposalDistribution(void)
+static YAP_Bool pl_proposalDistribution(void)
 {
 	int dimension=0;
 	YAP_Term head, list = YAP_ARG1;
@@ -473,7 +473,7 @@ static bool pl_proposalDistribution(void)
 	return(YAP_Unify(YAP_ARG6,val) && YAP_Unify(YAP_ARG7,weightTerm));
 }
 
-static bool pl_matrixproduct(void)
+static YAP_Bool pl_matrixproduct(void)
 {
 	int dimension=0;
 	YAP_Term head, list = YAP_ARG1;
@@ -539,7 +539,7 @@ static bool pl_matrixproduct(void)
 	return(YAP_Unify(YAP_ARG4,outputTerm));
 }
 
-static bool pl_multivariateGaussian(void)
+static YAP_Bool pl_multivariateGaussian(void)
 {
 	int dimension=0;
 	YAP_Term head, list = YAP_ARG1;
@@ -606,7 +606,7 @@ static bool pl_multivariateGaussian(void)
 }
 
 // NOT COMPLETE!
-static bool pl_multivariateGaussian_cut(void)
+static YAP_Bool pl_multivariateGaussian_cut(void)
 {
 	int dimension=0;
 	YAP_Term head, list = YAP_ARG1;
@@ -701,7 +701,7 @@ static bool pl_multivariateGaussian_cut(void)
 	return(YAP_Unify(out,val));
 }
 
-static bool pl_gamma(void) //alpha, beta, sampled value http://www.gnu.org/software/gsl/manual/html_node/The-Gamma-Distribution.html
+static YAP_Bool pl_gamma(void) //alpha, beta, sampled value http://www.gnu.org/software/gsl/manual/html_node/The-Gamma-Distribution.html
 {
 	double alpha;
 
@@ -725,7 +725,7 @@ static bool pl_gamma(void) //alpha, beta, sampled value http://www.gnu.org/softw
 	YAP_Term val = YAP_MkFloatTerm(sampled);
 	return(YAP_Unify(YAP_ARG3,val));
 }
-static bool pl_gamma_pdf(void) //alpha, beta, sampled value http://www.gnu.org/software/gsl/manual/html_node/The-Gamma-Distribution.html
+static YAP_Bool pl_gamma_pdf(void) //alpha, beta, sampled value http://www.gnu.org/software/gsl/manual/html_node/The-Gamma-Distribution.html
 {
 	double alpha;
 
@@ -758,7 +758,7 @@ static bool pl_gamma_pdf(void) //alpha, beta, sampled value http://www.gnu.org/s
 }
 
 
-static bool pl_betafunction(void) //alpha, beta, http://www.gnu.org/software/gsl/manual/html_node/Beta-Functions.html#Beta-Functions
+static YAP_Bool pl_betafunction(void) //alpha, beta, http://www.gnu.org/software/gsl/manual/html_node/Beta-Functions.html#Beta-Functions
 {
 	double alpha;
 
@@ -783,7 +783,7 @@ static bool pl_betafunction(void) //alpha, beta, http://www.gnu.org/software/gsl
 	return(YAP_Unify(YAP_ARG3,val));
 }
 
-static bool pl_logbetafunction(void)
+static YAP_Bool pl_logbetafunction(void)
 {
 	YAP_Term head, list = YAP_ARG1;
 
@@ -812,7 +812,7 @@ static bool pl_logbetafunction(void)
 }
 
 
-static bool pl_student(void) // http://www.gnu.org/software/gsl/manual/html_node/The-t_002ddistribution.html
+static YAP_Bool pl_student(void) // http://www.gnu.org/software/gsl/manual/html_node/The-t_002ddistribution.html
 {
 	double nu;
 
@@ -827,7 +827,7 @@ static bool pl_student(void) // http://www.gnu.org/software/gsl/manual/html_node
 	YAP_Term val = YAP_MkFloatTerm(sampled);
 	return(YAP_Unify(YAP_ARG2,val));
 }
-static bool pl_student_pdf(void) //args: nu, value, density http://www.gnu.org/software/gsl/manual/html_node/The-t_002ddistribution.html
+static YAP_Bool pl_student_pdf(void) //args: nu, value, density http://www.gnu.org/software/gsl/manual/html_node/The-t_002ddistribution.html
 {
 	double nu;
 
@@ -851,15 +851,40 @@ static bool pl_student_pdf(void) //args: nu, value, density http://www.gnu.org/s
 	return(YAP_Unify(YAP_ARG3,YAP_MkFloatTerm(pdf) ));
 }
 // likelihood for uniform distribution
-static bool pl_uniformweight(void)
+static YAP_Bool pl_uniformweight(void)
 {
 	int dimension=0;
 	YAP_Term head, list = YAP_ARG2;
 	int count=0;
+	double x,y;
+	bool isnumber = true;
+	if(YAP_IsIntTerm(YAP_ARG1))
+		x = YAP_IntOfTerm(YAP_ARG1);
+	else if(YAP_IsFloatTerm(YAP_ARG1))
+		x = YAP_FloatOfTerm(YAP_ARG1);
+	else
+		isnumber = false;
 	while(YAP_IsPairTerm(list))
 	{
 		head = YAP_HeadOfTerm(list);
-		if(YAP_ExactlyEqual(head,YAP_ARG1))
+
+		if(isnumber)
+		{
+			if(YAP_IsIntTerm(head))
+			{
+				y = YAP_IntOfTerm(head);
+				if(x==y)
+					count++;
+			}
+			else if(YAP_IsFloatTerm(head))
+			{
+				y = YAP_FloatOfTerm(head);
+				if(abs(x-y)<0.000000000000001) // floating-point tolerance
+					count++;
+			}
+
+		}
+		else if(YAP_ExactlyEqual(head,YAP_ARG1))
 			count++;
 		list = YAP_TailOfTerm(list);
 		dimension++;
@@ -870,16 +895,57 @@ static bool pl_uniformweight(void)
 	return(YAP_Unify(YAP_ARG3,YAP_MkFloatTerm(w) ));
 }
 // likelihood for finite distribution
-static bool pl_finiteweight(void)
+static YAP_Bool pl_finiteweight(void)
 {
 	int dimension=0;
 	YAP_Term head, list = YAP_ARG2;
-	double w=0.0;
+	double w=0.0,x,y;
+	bool isnumber = true;
+	if(YAP_IsIntTerm(YAP_ARG1))
+		x = YAP_IntOfTerm(YAP_ARG1);
+	else if(YAP_IsFloatTerm(YAP_ARG1))
+		x = YAP_FloatOfTerm(YAP_ARG1);
+	else
+		isnumber = false;
 	while(YAP_IsPairTerm(list))
 	{
 		head = YAP_HeadOfTerm(list);
 		YAP_Term p=YAP_ArgOfTerm(1,head);
-		if(YAP_Unify(YAP_ArgOfTerm(2,head),YAP_ARG1))
+		if(isnumber)
+		{
+			if(YAP_IsIntTerm(YAP_ArgOfTerm(2,head)))
+				{
+					y = YAP_IntOfTerm(YAP_ArgOfTerm(2,head));
+					if(x==y)
+					{
+						double prob;
+						if(YAP_IsIntTerm(p))
+								prob = YAP_IntOfTerm(p);
+							else if(YAP_IsFloatTerm(p))
+								prob = YAP_FloatOfTerm(p);
+							else
+								return false;
+						w+=prob;
+					}
+				}
+				else if(YAP_IsFloatTerm(YAP_ArgOfTerm(2,head)))
+				{
+					y = YAP_FloatOfTerm(YAP_ArgOfTerm(2,head));
+					if(abs(x-y)<0.000000000000001)
+					{
+						double prob;
+						if(YAP_IsIntTerm(p))
+								prob = YAP_IntOfTerm(p);
+							else if(YAP_IsFloatTerm(p))
+								prob = YAP_FloatOfTerm(p);
+							else
+								return false;
+						w+=prob;
+					}
+				}
+
+		}
+		else if(YAP_Unify(YAP_ArgOfTerm(2,head),YAP_ARG1))
 		{
 			double prob;
 			if(YAP_IsIntTerm(p))
@@ -898,7 +964,7 @@ static bool pl_finiteweight(void)
 	return(YAP_Unify(YAP_ARG3,YAP_MkFloatTerm(w) ));
 }
 
-static bool pl_samplefinite(void)
+static YAP_Bool pl_samplefinite(void)
 {
 	int dimension=0;
 	YAP_Term head, list = YAP_ARG1;
@@ -938,7 +1004,7 @@ static bool pl_samplefinite(void)
 	return(YAP_Unify(YAP_ARG2,values[selectednode] ));
 }
 
-static bool pl_listmax(void)
+static YAP_Bool pl_listmax(void)
 {
 //	int dimension=0;
 	YAP_Term head, list = YAP_ARG1;
@@ -991,7 +1057,7 @@ static bool pl_listmax(void)
 	return(YAP_Unify(YAP_ARG2,maxlist));
 }
 
-static bool pl_weightedaverage(void)
+static YAP_Bool pl_weightedaverage(void)
 {
 //	int dimension=0;
 	YAP_Term head, list = YAP_ARG1;
@@ -1028,7 +1094,7 @@ static bool pl_weightedaverage(void)
 	return(YAP_Unify(YAP_ARG2,YAP_MkFloatTerm(average)) && YAP_Unify(YAP_ARG3,YAP_MkFloatTerm(w) ));
 }
 
-static bool pl_variancewis(void)
+static YAP_Bool pl_variancewis(void)
 {
 	int dimension=0;
 	YAP_Term head, list = YAP_ARG1;
@@ -1079,7 +1145,7 @@ static bool pl_variancewis(void)
 }
 
 // variance with known average
-static bool pl_variance(void)
+static YAP_Bool pl_variance(void)
 {
 	int dimension=0;
 	YAP_Term head, list = YAP_ARG1;
@@ -1112,7 +1178,7 @@ static bool pl_variance(void)
 	return(YAP_Unify(YAP_ARG3,YAP_MkFloatTerm(variance) ));
 }
 
-static bool pl_averagevariance(void)
+static YAP_Bool pl_averagevariance(void)
 {
 	int dimension=0;
 	YAP_Term head, list = YAP_ARG1,list2 = YAP_ARG1;
@@ -1155,7 +1221,7 @@ static bool pl_averagevariance(void)
 	return(YAP_Unify(YAP_ARG3,YAP_MkFloatTerm(variance) ) && YAP_Unify(YAP_ARG2,YAP_MkFloatTerm(average) ));
 }
 
-static bool pl_dirichlet(void)
+static YAP_Bool pl_dirichlet(void)
 {
 	int dimension=0;
 	YAP_Term head, list = YAP_ARG1;
@@ -1199,7 +1265,11 @@ static bool pl_dirichlet(void)
 		else if(YAP_IsIntTerm(head))
 			dirParams[i] = YAP_IntOfTerm(head);
 		else
+		{
+			delete[] dirParams;
+			delete[] qNew;
 			return false;
+		}
 
 		list = YAP_TailOfTerm(list);
 		i++;
@@ -1244,7 +1314,7 @@ static bool pl_dirichlet(void)
 }
 
 
-static bool pl_dirichlet_pdf(void)
+static YAP_Bool pl_dirichlet_pdf(void)
 {
 	int dimension=0;
 	YAP_Term head, list = YAP_ARG1;
@@ -1276,14 +1346,22 @@ static bool pl_dirichlet_pdf(void)
 		else if(YAP_IsIntTerm(head))
 			dirParams[i] = YAP_IntOfTerm(head);
 		else
+		{
+			delete[] dirParams;
+			delete[] val;
 			return false;
+		}
 
 		if(YAP_IsFloatTerm(headv))
 			val[i] = YAP_FloatOfTerm(headv);
 		else if(YAP_IsIntTerm(headv))
 			val[i] = YAP_IntOfTerm(headv);
 		else
+		{
+			delete[] dirParams;
+			delete[] val;
 			return false;
+		}
 
 		list = YAP_TailOfTerm(list);
 		listv = YAP_TailOfTerm(listv);
@@ -1324,7 +1402,7 @@ static bool pl_dirichlet_pdf(void)
 	*/
 }
 
-static bool pl_normal(void)
+static YAP_Bool pl_normal(void)
 {
   double mean;
 
@@ -1360,7 +1438,7 @@ static bool pl_normal(void)
   return(YAP_Unify(out,val));
 }
 
-static bool pl_normalgsl(void)
+static YAP_Bool pl_normalgsl(void)
 {
   double mean;
 
@@ -1478,7 +1556,7 @@ kalman(A,B,[1,DeltaT,0,1],[0,0],[0,0],[Cov11,Cov12,Cov21,Cov22], [1,0] , [0],[0.
 
 kalman([1],[0.2],[1],[1],[0.0],[0.1],[1],[0.0],[0.1],[2],[1],A,B).
 */
-static bool pl_kalman(void)
+static YAP_Bool pl_kalman(void)
 {
 	int dimension=0;
 	YAP_Term head, list = YAP_ARG1;
@@ -1676,7 +1754,7 @@ static bool pl_kalman(void)
 
 // mean_Xt,cov_Xt,A,B,mean_sistem_uncertainty,cov_sistem_uncertainty,H,mean_measurement_uncertainty,cov_measurement_uncertainty,input,measurement,post mean,post cov,Weight
 
-static bool pl_kalmanRao(void)
+static YAP_Bool pl_kalmanRao(void)
 {
 	int dimension=0;
 	YAP_Term head, list = YAP_ARG1;
@@ -1905,7 +1983,7 @@ static bool pl_kalmanRao(void)
 
 //1 mean_Xt, 2 cov_Xt, 3 H, 4 mean_measurement_uncertainty, 5 cov_measurement_uncertainty, 6 measurement, 7 post mean, 8 post cov, 9 Weight
 
-static bool pl_kalmanRao_simplified(void)
+static YAP_Bool pl_kalmanRao_simplified(void)
 {
 	int dimension=0;
 	YAP_Term head, list = YAP_ARG1;
@@ -2046,7 +2124,7 @@ static bool pl_kalmanRao_simplified(void)
 }
 
 // densityGaussian in prolog: compute the density of a Gaussian
-static bool pl_densityMultivariateGaussian(void)
+static YAP_Bool pl_densityMultivariateGaussian(void)
 {
 	int dimension=0;
 	YAP_Term head, list = YAP_ARG1;
@@ -2198,7 +2276,7 @@ static bool pl_densityMultivariateGaussian(void)
 }
 
 /* USES RNG
-static bool pl_poisson(void)
+static YAP_Bool pl_poisson(void)
 {
   double lambda;
 
@@ -2218,7 +2296,7 @@ static bool pl_poisson(void)
 }
 */
 
-static bool pl_poisson(void)
+static YAP_Bool pl_poisson(void)
 {
   double lambda;
 
@@ -2236,7 +2314,7 @@ static bool pl_poisson(void)
   return(YAP_Unify(out,val));
 }
 
-static bool pl_poissonpdf(void)
+static YAP_Bool pl_poissonpdf(void)
 {
 	double k;
 
@@ -2263,7 +2341,7 @@ static bool pl_poissonpdf(void)
   return(YAP_Unify(out,val));
 }
 
-static bool pl_betapdf(void)
+static YAP_Bool pl_betapdf(void)
 {
 	double x,a,b;
 
@@ -2298,7 +2376,7 @@ static bool pl_betapdf(void)
 }
 
 
-static bool pl_checkgoallw(void)
+static YAP_Bool pl_checkgoallw(void)
 {
 	YAP_Functor ground=YAP_MkFunctor(YAP_LookupAtom("ground"),1);
 	int dimension=0;
@@ -2364,7 +2442,7 @@ static bool pl_checkgoallw(void)
 }
 
 
-static bool pl_setseed(void)
+static YAP_Bool pl_setseed(void)
 {
   double seed;
 
@@ -2381,7 +2459,7 @@ static bool pl_setseed(void)
 }
 /*
 // draws 2 independent gaussian values
-static bool pl_normal2(void)
+static YAP_Bool pl_normal2(void)
 {
   double mean;
 

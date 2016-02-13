@@ -3,6 +3,28 @@
 #include <cstring>
 #include <iostream>
 #include <string>
+YAP_Term planner::getBestAction3(string currentstate,uint samples,uint depth,uint depthsearch)
+{
+	YAP_Term error;
+// executedplan_step(BAction,Abstract,Init,N,MaxD,TotalR,T,MaxDSearch,STOP)
+	string goal="executedplan_step(BAction,"+ std::to_string(abstraction)+
+	",["+currentstate+"],"+ std::to_string(samples) +"," + std::to_string(depth) +
+	",TotalR,T," + std::to_string(depthsearch)+ "STOP)";
+//	cout<<goal;
+//	YAP_Exit(0);
+	YAP_Term tmp = YAP_ReadBuffer(goal.c_str(),&error);
+	//YAP_handle_t
+	long safe_t = YAP_InitSlot(tmp); // have a safe pointer to term
+	int res = YAP_RunGoalOnce(tmp);
+	if (res==false)
+		return -1;
+
+	YAP_Term bestAction = YAP_ArgOfTerm(9,YAP_GetFromSlot(safe_t)) ;
+
+	YAP_RecoverSlots(1); // safe copy not needed anymore
+	return bestAction;
+}
+
 YAP_Term planner::getBestAction(string currentstate,uint samples,uint depth)
 {
 	YAP_Term error;
@@ -11,14 +33,14 @@ YAP_Term planner::getBestAction(string currentstate,uint samples,uint depth)
 //	cout<<goal;
 //	YAP_Exit(0);
 	YAP_Term tmp = YAP_ReadBuffer(goal.c_str(),&error);
-	YAP_handle_t safe_t = YAP_InitSlot(tmp); // have a safe pointer to term
+	long safe_t = YAP_InitSlot(tmp); // have a safe pointer to term
 	int res = YAP_RunGoalOnce(tmp);
 	if (res==false)
 		return -1;
 
 	YAP_Term bestAction = YAP_ArgOfTerm(9,YAP_GetFromSlot(safe_t)) ;
 
-	YAP_RecoverSlots(1,safe_t); // safe copy not needed anymore
+	YAP_RecoverSlots(1); // safe copy not needed anymore
 	return bestAction;
 }
 
@@ -38,13 +60,13 @@ YAP_Term planner::getBestAction2(string currentstate,int samples,int depth)
 //	YAP_Exit(0);
 	YAP_Term tmp = YAP_MkApplTerm( simpleplan , 9, arg);
 	printnl(tmp);
-	YAP_handle_t safe_t = YAP_InitSlot(tmp); // have a safe pointer to term
+	long safe_t = YAP_InitSlot(tmp); // have a safe pointer to term
 	int res = YAP_RunGoalOnce(tmp);
 	if (res==false)
 		return -1;
 
 	YAP_Term bestAction = YAP_ArgOfTerm(9,YAP_GetFromSlot(safe_t)) ;
 
-	YAP_RecoverSlots(1,safe_t); // safe copy not needed anymore
+	YAP_RecoverSlots(1); // safe copy not needed anymore
 	return bestAction;
 }

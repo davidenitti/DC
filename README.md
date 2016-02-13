@@ -9,9 +9,9 @@ The code is in beta, if you need help or find a bug please write an [issue](http
 or contact me at davide (_DOT_) nitti (AT) cs (_DOT_) kuleuven (_DOT_) be
 
 ## Prerequisites
-Install Yap prolog (tested on [YAP 6.3.4](https://github.com/vscosta/yap-6.3/archive/master.zip)), follow these instructions:
+Install Yap prolog (tested on [YAP 6.2.2](http://www.dcc.fc.up.pt/~vsc/Yap/yap-6.2.2.tar.gz)), follow these instructions:
 ```
-cd yap-6.3
+cd yap-6.2.2
 mkdir arch
 cd arch
 ../configure --enable-tabling=yes --enable-dynamic-loading

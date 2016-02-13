@@ -1,0 +1,131 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+
+  
+  <meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"><title>installation</title></head><body style="color: rgb(0, 0, 0); background-color: rgb(240, 239, 255);" alink="#000099" link="#000099" vlink="#990099">
+<h2>
+Prerequisites</h2>
+
+Install <a href="http://www.dcc.fc.up.pt/%7Evsc/Yap/downloads.html">Yap
+prolog</a> (tested on YAP 6.2.3), follow <a href="http://www.dcc.fc.up.pt/%7Evsc/Yap/documentation.html#Install">these
+instructions</a> and using these options for configure:<br>
+
+<span style="font-family: Courier New,Courier,monospace;">../configure
+--enable-tabling=yes --enable-dynamic-loading</span><br>
+
+<br>
+
+Install <a href="http://www.gnu.org/s/gsl/">GSL library</a> e.g. for
+Ubuntu:<br>
+
+<span style="font-family: Courier New,Courier,monospace;">sudo apt-get
+install libgsl0-dev libgsl0ldbl</span><br>
+
+<br>
+
+Install boost library<br>
+
+<br>
+
+Optional<br>
+
+In case of problems with <a href="http://people.mech.kuleuven.be/%7Etdelaet/bfl_doc/installation_guide/">BFL
+library</a>, use <a href="instructions-bfl.txt">these instructions to
+compile and install the patched BFL<br>
+</a>
+<br>
+
+<h2>Installation<br>
+</h2>
+
+Download the code:<br>
+
+<span style="font-family: Courier New,Courier,monospace;">svn checkout
+http://distributional-clauses.googlecode.com/svn/trunk/
+distributional-clauses</span><br>
+
+<br>
+Install/test library:<br>
+
+<span style="font-family: Courier New,Courier,monospace;">sh install.sh</span><br>
+
+<br>
+
+Expected output (the number can be different)<br>
+
+<span style="font-family: Courier New,Courier,monospace;">testing sampling library...<br>
+yes<br>
+sample from gaussian(1,1): 1.42071748719105<br>
+Everything works!</span><br>
+<br>
+<br>
+<h2><span style="font-weight: bold;">Troubleshooting</span></h2>
+In case of problems try to recompile, execute in <span style="font-weight: bold;">random</span> directory:<br>
+
+
+<span style="font-family: Courier New,Courier,monospace;">make
+clean &amp;&amp; make</span><br style="font-family: monospace;">
+
+
+
+<br>
+Test with<br>
+<span style="font-family: Courier New,Courier,monospace;">make test</span><br>
+<br>
+otherwise try:<br>
+
+
+<span style="font-family: Courier New,Courier,monospace;">make
+clean &amp;&amp; make sharedlocal</span> <br>
+<br>
+
+
+If the patched BFL has been compiled and installed manually execute
+instead:<br>
+
+
+<span style="font-family: Courier New,Courier,monospace;">make clean
+&amp;&amp; make shared</span><br>
+<br>
+
+In case of problems with <a href="http://people.mech.kuleuven.be/%7Etdelaet/bfl_doc/installation_guide/">BFL
+library</a> (file liborocos-bfl.so/a), use <a href="instructions-bfl.txt">these
+instructions to compile and install the patched BFL</a> and perform:<br>
+
+<span style="font-family: Courier New,Courier,monospace;">make clean
+&amp;&amp; make shared</span><br><br>
+Test again with<br>
+
+<span style="font-family: Courier New,Courier,monospace;">make test</span><br>
+
+<br>
+
+<h2><span style="font-weight: bold;">Test Example</span></h2>
+
+
+run:<br>
+
+<span style="font-family: Courier New,Courier,monospace;">yap -l
+examples/example1.pl</span><br>
+
+<br>
+or just<br>
+<span style="font-family: Courier New,Courier,monospace;">sh test.sh</span><br>
+<br>
+
+Expected output (the error values may differ):<br>
+
+<small style="font-family: Courier New,Courier,monospace;">init<br>
+error drawn(1) ~= 1: 0.000496825396825384<br>
+error drawn(1) ~= 2: 0.0014031746031746<br>
+error drawn(1) ~= 3: 0.00380317460317459</small><br style="font-family: monospace;">
+
+<br>
+
+Query example (for example1.pl):<br>
+
+<span style="font-family: Courier New,Courier,monospace;">init.</span><br style="font-family: Courier New,Courier,monospace;">
+
+<span style="font-family: Courier New,Courier,monospace;">eval_query([],[],drawn(1)
+~= 1,1000,P,A,B).</span>
+</body></html>

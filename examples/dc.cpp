@@ -61,31 +61,31 @@ bool dc::exec(string q)
 }
 bool dc::runGoalOnce(YAP_Term tmp,int argOutput, int &out)
 {
-	YAP_handle_t safe_t = YAP_InitSlot(tmp); // have a safe pointer to term
+	long safe_t = YAP_InitSlot(tmp); // have a safe pointer to term
 	int res = YAP_RunGoalOnce(tmp);
 	if (res==false)
 		return false;
 	out = YAP_IntOfTerm(YAP_ArgOfTerm(argOutput,YAP_GetFromSlot(safe_t)));
-	YAP_RecoverSlots(1,safe_t); // safe copy not needed anymore
+	YAP_RecoverSlots(1); // safe copy not needed anymore
 	return true;
 }
 bool dc::runGoalOnce(YAP_Term tmp,int argOutput, double &out)
 {
-	YAP_handle_t safe_t = YAP_InitSlot(tmp); // have a safe pointer to term
+	long safe_t = YAP_InitSlot(tmp); // have a safe pointer to term
 	int res = YAP_RunGoalOnce(tmp);
 	if (res==false)
 		return false;
 	out = YAP_FloatOfTerm(YAP_ArgOfTerm(argOutput,YAP_GetFromSlot(safe_t)));
-	YAP_RecoverSlots(1,safe_t); // safe copy not needed anymore
+	YAP_RecoverSlots(1); // safe copy not needed anymore
 	return true;
 }
 YAP_Term dc::runGoalOnce(YAP_Term tmp,int argOutput)
 {
-	YAP_handle_t safe_t = YAP_InitSlot(tmp); // have a safe pointer to term
+	long safe_t = YAP_InitSlot(tmp); // have a safe pointer to term
 	int res = YAP_RunGoalOnce(tmp);
 	if (res==false)
 		return 0;
 	YAP_Term out = YAP_FloatOfTerm(YAP_ArgOfTerm(argOutput,YAP_GetFromSlot(safe_t)));
-	YAP_RecoverSlots(1,safe_t); // safe copy not needed anymore
+	YAP_RecoverSlots(1); // safe copy not needed anymore
 	return out;
 }

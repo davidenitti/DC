@@ -36,7 +36,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-:- module(dcpf,[product_list/2,eval_variance_particle/6,eval_average_particle/5,step_particle_aux/4,step_particle_aux/3,avgvar/3,sum_prob/2,inference/1,set_lifted/1,set_options/1,set_current2nextcopy/1,printkeyp/1,printkeyp2/1,printkey/1,step_particle_aux/5,logIndepOptimalProposals/3,indepOptimalProposals/3,optimalproposal/7,likelihood_weighting/3,normalize/2,printp/1,printp/0,set_inference/1,step_particle/3,step_particle/4,step_particle/5,step_particle_ps/2,step_particle_ps/3,step_particle_ps/4,eval_query_particle/3,eval_query_particle2/4,init_particle/1,init_particle/2,init_particle/3]).
+:- module(dcpf,[set_query_propagation/1,product_list/2,eval_variance_particle/6,eval_average_particle/5,step_particle_aux/4,step_particle_aux/3,avgvar/3,sum_prob/2,inference/1,set_lifted/1,set_options/1,set_current2nextcopy/1,printkeyp/1,printkeyp2/1,printkey/1,step_particle_aux/5,logIndepOptimalProposals/3,indepOptimalProposals/3,optimalproposal/7,likelihood_weighting/3,normalize/2,printp/1,printp/0,set_inference/1,step_particle/3,step_particle/4,step_particle/5,step_particle_ps/2,step_particle_ps/3,step_particle_ps/4,eval_query_particle/3,eval_query_particle2/4,init_particle/1,init_particle/2,init_particle/3]).
 
 :- use_module('random/sampling.pl').
 :- use_module(library(lists)).
@@ -50,7 +50,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 :- dynamic user:distributionalclausecopied/4.
 :- dynamic user:hardclausecopied/3.
 
-%abolish_all_tables :-!.
+abolish_all_tables :-!.
 
 printp(Pos) :-
 	dcpf:bb_get(offset,Offset),
@@ -405,18 +405,24 @@ get_logparticle_distribution(DistrNorm,N) :-
 
 
 fast_get_logparticle_distribution(DistrNorm,N) :-
+%	writeln(fast_get_logparticle_distribution),
 	bb_get(offset,Offset),
 %	bb_put(distrib,[]),
 %	bb_put(bestparticle,1),
 	First is Offset+1,
-	bb_get(First,WFirst),
+	bb_get(First,WFirst1), % should be the max weight not the first
+	% TODO fix when WFirst is -inf. Temporal fix:
+%	(WFirst1==(-inf) -> WFirst is 0;WFirst=WFirst1),
+	WFirst= -10,
 	findall(WPos:I,(between(1,N,Pos),
 	(
 		I is Offset+Pos,
 		bb_get(I,WW),
-		WPos is exp(WW-WFirst),WPos>0
+		
+		WPos is exp(WW-WFirst),WPos>0%
+%		writeln((WPos is exp(WW-WFirst),WPos>0))
 	)),Distribution),
-
+	
 	(
 		Distribution=[] ->
 		(
@@ -427,7 +433,8 @@ fast_get_logparticle_distribution(DistrNorm,N) :-
 		)
 		;
 		normalize(Distribution,DistrNorm)
-	).%write(Distribution),nl,
+	).
+%	writeln(end_fast_get_logparticle_distribution).%write(Distribution),nl,
 
 % resampling
 findpos(N,[],Cumulative,I) :-!.
@@ -947,7 +954,7 @@ resampling(N) :-
 	NewOffset is N-Offset,
 	bb_put(offset,NewOffset),
 	(
-		Neff<N*0.8 ->
+		Neff<N*0.9 ->
 		(
 			% resampling
 %			writeln('resampling'),
@@ -972,7 +979,7 @@ resampling_aux(N) :-
 	
 %	write('effective particles '),write(RelN),nl,
 	(
-		Neff<N*0.8 ->
+		Neff<N*0.9 ->
 		(
 			% resampling
 %			writeln('resampling'),
@@ -988,6 +995,164 @@ resampling_aux(N) :-
 		bb_put(offset,NewOffset)
 		)
 	),!.
+
+% alternative version	
+resampling_aux2(N) :-
+	Rand is random/N,
+	bb_get(offset,Offset),
+%	fast_get_logparticle_distribution(Distribution,N),
+	fast_get_logparticle_distribution2(Neff,N),
+%	write(Distribution),nl,
+%	(effectivenumparticles(Distribution,Neff)),
+%	writeln((Neff)),
+	RelN is Neff/N*100,
+%	write('effective particles '),write(RelN),nl,
+	NewOffset is N-Offset,
+	
+%	write('effective particles '),write(RelN),nl,
+	(
+		Neff<N*0.9 ->
+		(
+			% resampling
+			%writeln('resampling'),
+			bb_put(x,Rand),
+			II is NewOffset+1,
+			(findpos_aux3(N,1,0,II)),
+			(copyparticles_aux2(Offset,N)),
+			bb_put(offset,Offset)
+		)
+		;
+		(
+		(copyparticles_aux3(NewOffset,N)), % no resampling
+		bb_put(offset,NewOffset)
+		)
+	),!.
+
+fast_get_logparticle_distribution2(Effective,N) :-
+	bb_get(offset,Offset),
+	eraseall(distribution),
+	First is Offset+1,
+	bb_get(First,WFirst),
+	bb_put(sumd,0.0),
+	bb_put(sumeffective,0.0),
+	forall(between(1,N,Pos),
+	(
+		I is Offset+Pos,
+		bb_get(I,WW),
+		WPos is exp(WW-WFirst),WPos>0,
+		recorda(distribution,d(Pos,I,WPos),_),
+		bb_get(sumd,OldS),
+		NewS is OldS + WPos,
+		bb_put(sumd,NewS)
+	)),
+	bb_delete(sumd,Sum),
+	(
+		\+recorded(distribution,d(_,_,_),_) ->
+		(
+			nl,write('ERROR: all particles have weight 0!'),nl,
+			% temporal solution: take the 1st particle
+			Pos1 is Offset+1,
+			recorda(distribution,d(1,Pos1,1.0),_),
+			halt
+		)
+		;
+		true %normalize(Distribution,DistrNorm)
+	),
+	forall(between(1,N,Pos),
+	(
+		recorded(distribution,d(Pos,I,WPos),Key),
+		erase(Key),
+		WN is WPos/Sum,
+		recorda(distribution,d(Pos,I,WN),_),
+%		writeln(d(Pos,I,WN)),
+		bb_get(sumeffective,OldEf),
+		NewEf is OldEf + WN*WN,
+		bb_put(sumeffective,NewEf)
+	)),
+	bb_delete(sumeffective,SumEFF),
+	Effective is 1.0/SumEFF.
+
+
+%findpos_aux3(N,[],Cumulative,I) :-!.
+
+findpos_aux3(N,Num,Cumulative,I) :-
+	(
+	Num =< N ->
+	(
+	recorded(distribution,d(Num,Pos,WW),_),
+	bb_get(x,X),
+	(
+		(X=<N)
+		->
+		(
+			Cum is Cumulative+WW,
+			(
+				X<Cum
+				->
+				(
+					eraseall(I),
+					bb_put(I,0.0),
+					(
+						recorded(Pos,CC,K),
+						recorda(I,CC,_),
+						fail;
+						true
+					),
+					select_inference_particlefilter(I,_),
+					%write(('pos ',Pos,' x ',X,' i ',I,' w ',WW)),nl,
+					/*bb_get(bestparticle,Best),
+					(
+						Pos==Best ->
+						bb_put(bestparticle,I);
+						true
+					),*/
+					
+					NewX is X+1/N,
+					bb_put(x,NewX),
+					NewI is I+1,
+					
+					findpos_aux3(N,Num,Cumulative,NewI)
+				);
+				(
+					NewNum is Num+1,
+					findpos_aux3(N,NewNum,Cum,I)
+				)
+			)
+		)
+		;
+		true
+	)
+	)
+	;
+	true
+	).
+copyparticles_aux3(Offset,N) :-
+	(
+		between(1,N,Index),
+		I is Offset+Index,
+		eraseall(I),
+		bb_put(I,(-inf)),
+		fail;
+		true
+	),
+	(
+		recorded(distribution,d(Index,Pos,WW),_),
+%		between(1,Size,Index),
+%		nth1(Index,Distribution,WW:Pos),
+		I is Offset+Index,
+		(
+			eraseall(I),
+			LogWW is log(WW),
+			bb_put(I,LogWW),
+			select_inference_particlefilter(Pos,_),%inferencestep_particlefilter_backward3(Pos),
+			
+			copyparticles_core(Pos,I)
+			
+		),
+		fail;
+		true
+	).
+
 	
 resampling_ps(N) :-
 	Rand is random/N,
@@ -1418,7 +1583,7 @@ step_particle_aux_main(Actions,PosEvidence,Constraints,N,Delta,Assert) :-
 		%write('particle '),write(I),nl,
 		(Assert==true ->
 			(
-%			assert_list(I,PosEvidence), % assert observations
+			assert_list(I,PosEvidence), % assert observations
 			assert_list(I,Actions) % assert Actions
 			)
 			;
@@ -1453,8 +1618,8 @@ step_particle_aux_main(Actions,PosEvidence,Constraints,N,Delta,Assert) :-
 						true;
 						( write(logweight_backward(I,PosEvidence,P)),writeln(' failed'),printkeyp(I) )
 					)*/
-					%logweight_backward(I,PosEvidence,P)
-					logweight_lw(I,PosEvidenceNext,P)%%eval_weight_backward(I,PosEvidence,P)%,
+					logweight_backward(I,PosEvidence,P)%,
+					%logweight_lw(I,PosEvidenceNext,P,DX),%%eval_weight_backward(I,PosEvidence,P)%,
 					%write('weight '),write(P),nl
 				%)
 				%;
@@ -1472,7 +1637,7 @@ step_particle_aux_main(Actions,PosEvidence,Constraints,N,Delta,Assert) :-
 		%write('weight '),write(P),nl,
 		%bb_get(I,OldWeight),
 		NewW is LogOldWeight+P, % log
-		bb_put(I,NewW),
+		bb_put(I,NewW), % FIXME use DX to compute weights
 		
 		bb_get(likelihood,Likelihood),
 		NewLikelihood is Likelihood+exp(NewW),
@@ -1913,7 +2078,7 @@ eval_weight_constraints(Iteration,I,O,C,P) :-
 	),!.
 
 
-logweight_lw(I,O,P) :-
+logweight_lw(I,O,P,DX) :-
 	
 	%writeln((OTuple,O)),
 	test_to_list(OTuple,O),
@@ -1922,14 +2087,15 @@ logweight_lw(I,O,P) :-
 	bb_put(distributionalclause:q,O),
 	%length(O,NQ),
 	%bb_put(distributionalclause:nq,NQ),
-	bb_put(dx,0),
+	bb_put(distributionalclause:dx,0),
 	%writeln((OTuple,O)),
 	(distributionalclause:proof_query_backward_lw(I,OTuple) ->
-		bb_delete(distributionalclause:wevidence,W)
+		(bb_delete(distributionalclause:wevidence,W),bb_delete(distributionalclause:dx,DX))
 	;
-		( write(logweight_backward(I,OTuple,W)),writeln(' failed'),printkeyp(I),W=0)
+		( write(logweight_lw(I,OTuple,W)),writeln(' failed'),printkeyp(I),W=0)
 	),
 	%writeln(W),
+	
 	P is log(W),!.
 logweight_constraints(Iteration,I,O,C,P) :-
 	(
@@ -3635,7 +3801,7 @@ inferencestep_particlefilter_backward3(Key) :-
 	bb_put(flag,false),
 	(
 		user:hardclause(next(Head),Body,_),
-		distributionalclause:containscurrent(Body),
+		\+user:hardclausecopied(next(Head),Body,_),%distributionalclause:containscurrent(Body),
 		proof_query_backward_lazy(Key,Body),
 		(
 			ground(Head) ->
@@ -3653,7 +3819,7 @@ inferencestep_particlefilter_backward3(Key) :-
 	(
 		user:distributionalclause(next(Head2),Distribution,Body,_),
 		Head2\=observation(_),
-		distributionalclause:containscurrent(Body),
+		\+user:distributionalclausecopied(next(Head2),Distribution,Body,_),%distributionalclause:containscurrent(Body),
 		% RAO
 		/*
 		(
