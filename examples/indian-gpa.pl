@@ -51,7 +51,9 @@ test1(N) :-
 test_gpa(N) :-
 	init,
 	eval_query([student_gpa~=3.9],[],nation~=a,N,P,A,B), % p(nation~=a|student_gpa~=3.9)
-	write('probability: '),writeln((P,A,B)).
+	write('probability student_gpa~=3.9: '),writeln(P),
+	eval_query([student_gpa~=4],[],nation~=a,N,P2,A2,B2), % p(nation~=a|student_gpa~=3.9)
+	write('probability student_gpa~=4: '),writeln(P2).
 
 	
 e1_lw(N) :-

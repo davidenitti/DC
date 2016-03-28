@@ -67,7 +67,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 :- op(1100,xfx,user:':=').
 :- op(1101,xfx,user:'pr').
 
-abolish_all_tables :-!.
+%abolish_all_tables :-!.
 
 % tabling unstable!
 /*
@@ -5239,8 +5239,8 @@ expandquery5(A,Out2):-
 	LLT=[false]
 	),
 	distributionalclause:simplify_query(0,0,[LLT],Out),
-	removedup(Out,Out2,Out),
-	writeln(Out2).
+	removedup(Out,Out2,Out).
+%	writeln(Out2).
 
 necessary(Init,Final) :-
 	(

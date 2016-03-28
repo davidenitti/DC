@@ -50,7 +50,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 :- dynamic user:distributionalclausecopied/4.
 :- dynamic user:hardclausecopied/3.
 
-abolish_all_tables :-!.
+%abolish_all_tables :-!.
 
 printp(Pos) :-
 	dcpf:bb_get(offset,Offset),
