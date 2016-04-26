@@ -4,7 +4,7 @@
 :- use_module('../random/sampling.pl').
 :- use_module(library(lists)).
 
-:- set_options(default),set_inference(backward(lw)),set_query_propagation(true).
+:- set_options(default),set_inference(backward(lw)),set_query_propagation(true). % enable query propagation
 %:- set_debug(true).
 
 :- initialization(time(test_gpa(10000))).
