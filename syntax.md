@@ -2,7 +2,8 @@
 
 Comments as in Prolog: %
 
-***deterministic clauses***
+***Deterministic clauses***
+
 Syntax: head := body.
 Explaination: body implies head as clauses in prolog, the only difference is the implication operator := instead of :-
 
