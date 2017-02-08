@@ -7,6 +7,7 @@ Comments as in Prolog: %
 Syntax: `head := body.`
 
 Explaination: body implies head as clauses in prolog, the only difference is the implication operator := instead of :-
+The body is a list of literals (atomic formulas or their negations).
 
 Example:
 ```
@@ -35,7 +36,8 @@ coin2 ~ finite([0.4:true,0.6:false]) := coin ~= true. % if coin is true then coi
 
 ##operations
 
-**equality operator for random variables**
+**Equality operator for random variables**
+
 Syntax: `var ~= term`
 
 Explaination: the value of the random variable 'var' is equal to term (unifiable). A term can be a constant, logical variable or a compund term.
@@ -46,6 +48,26 @@ tcoin := coin ~= true. % 'tcoin' is true if the value of coin is the constant te
 anyvalue := coin ~= A. % 'anyvalue' is true if the random variable coin exists (whatever is its value). More formally, anyvalue is true iff exists A such that the value of coin is equal to A.
 samevalue := coin ~= A, coin2 ~= A. % 'samevalue' is true if the values of coin and coin2 are the same. More formally, 'samevalue' is true iff exists A such that the value of coin and coin2 are both equal to A.
 ```
+
+**Other comparison operators**
+
+At the moment the operators <,>,<=,>= are defined only between constants (not random variables).
+
+To compare the value of a random variable the equality operator is used first.
+
+
+Examples:
+```
+person(carl) := true.
+person(bob) := true.
+height(X) ~ gaussian(1.6,0.1) := person(X). % for each person X, height(x) is a random variable with gaussian distribution
+gender(X) ~ finite([0.54:female,0.46:male]) := person(X).
+
+tall(X) := height(X) ~= H,H>2. % tall(X) is true iff the value of height(X) is greater than 2. 
+not_tall(X) := person(X), \+ tall(X). % not_tall(X) is true if X is a not tall person 
+
+```
+The definition of 'tall(X)' is deterministic, but since it depends on the random variable 'g', 'tall' is implicitely a random variable. The atom tall(X) or its negation \+ tall(X) can be used as literals in the body of another clause.
 
 ###Supported distributions
 
@@ -69,3 +91,10 @@ samevalue := coin ~= A, coin2 ~= A. % 'samevalue' is true if the values of coin 
  syntax ```gaussian(meanvector,covariance)```
 
  example ```gaussian([0,1],[1,0.1,0.1,1])``` % the covariance is flatten row by row
+ 
+* Beta
+
+ syntax ```beta(a,b)```
+
+ example ```beta(1,2)``` % beta distribution with alpha=1 and beta=2
+* to finish...
