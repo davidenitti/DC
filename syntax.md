@@ -76,9 +76,8 @@ gender(X) ~ finite([0.54:female,0.46:male]) := person(X).
 
 tall(X) := height(X) ~= H,H>2. % tall(X) is true iff the value of height(X) is greater than 2. 
 not_tall(X) := person(X), \+ tall(X). % not_tall(X) is true if X is a not tall person 
-
 ```
-The definition of 'tall(X)' is deterministic, but since it depends on the random variable 'height(X)', 'tall(X)' is implicitely a random variable. The atom tall(X) or its negation \+ tall(X) can be used as literals in the body of another clause.
+The definition of 'tall(X)' is deterministic, but since it depends on the random variable 'height(X)', 'tall(X)' is implicitely a random variable. The atom `tall(X)` or its negation `\+ tall(X)` can be used as literals in the body of another clause.
 
 ###Supported distributions
 
