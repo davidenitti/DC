@@ -1,6 +1,18 @@
 #DC Syntax (work in progress)
 
-Comments as in Prolog: %
+
+**Built-in Yap-Prolog operators**
+* numerical comparisons between numbers (not random variables): `=`, `<`, `>`, `<=`, `>=`
+* equality operator (unification): `=`
+* equality operator with expression evaluation: `is`
+
+ For example, `10 is 2*5` is true, `A is 2*5` is true for `A=10` (the logical variable A is unified with 10 if possible)
+ 
+* integer number comparison: `between(A,B,C)` C is between A and B and C is integer.
+
+ For example, the formula `between(1,5,C)` is true for C=1, 2, 3, 4, 5.
+* single-line comments: `%`
+
 
 ##Deterministic clauses
 
@@ -15,7 +27,6 @@ not_empty(Y) := inside(X,Y). % not_empty(Y) is true if there exists an object X 
 
 inside(1,2) := true. % inside(1,2) is a true fact. The body has to be specified to distinguish it with prolog syntax
 ```
-
 
 
 ##Distributional clauses
@@ -34,7 +45,8 @@ coin ~ finite([0.2:true,0.8:false]). % the body is implicitly true.
 coin2 ~ finite([0.4:true,0.6:false]) := coin ~= true. % if coin is true then coin2 is defined with a given distribution.
 ```
 
-##operations
+##Operators
+
 
 **Equality operator for random variables**
 
@@ -51,23 +63,22 @@ samevalue := coin ~= A, coin2 ~= A. % 'samevalue' is true if the values of coin 
 
 **Other comparison operators**
 
-At the moment the operators <,>,<=,>= are defined only between constants (not random variables).
+At the moment the operators <, >, <=, >= are defined only between constants (not random variables).
 
 To compare the value of a random variable the equality operator is used first.
-
 
 Examples:
 ```
 person(carl) := true.
 person(bob) := true.
-height(X) ~ gaussian(1.6,0.1) := person(X). % for each person X, height(x) is a random variable with gaussian distribution
+height(X) ~ gaussian(1.65,0.1) := person(X). % for each person X, height(x) is a random variable with gaussian distribution
 gender(X) ~ finite([0.54:female,0.46:male]) := person(X).
 
 tall(X) := height(X) ~= H,H>2. % tall(X) is true iff the value of height(X) is greater than 2. 
 not_tall(X) := person(X), \+ tall(X). % not_tall(X) is true if X is a not tall person 
 
 ```
-The definition of 'tall(X)' is deterministic, but since it depends on the random variable 'g', 'tall' is implicitely a random variable. The atom tall(X) or its negation \+ tall(X) can be used as literals in the body of another clause.
+The definition of 'tall(X)' is deterministic, but since it depends on the random variable 'height(X)', 'tall(X)' is implicitely a random variable. The atom tall(X) or its negation \+ tall(X) can be used as literals in the body of another clause.
 
 ###Supported distributions
 
