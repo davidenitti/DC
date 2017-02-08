@@ -52,14 +52,18 @@ samevalue := coin ~= A, coin2 ~= A. % 'samevalue' is true if the values of coin 
  syntax ```finite([probability1:value1,...,probabilityn:valuen])```
 
  example ```finite([0.1:black,0.5:red,0.4:blue])```
-
-* uniform categorical (discrete)
+* Uniform categorical (discrete)
 
  syntax ```uniform([value1,value2,...,valuen])```
 
  example ```uniform([black,red,blue])```
+* Gaussian (univariate)
 
+ syntax ```gaussian(mean,variance)```
 
+ example ```gaussian(0,1)```
+* Gaussian (multivariate)
 
+ syntax ```gaussian(meanvector,covariance)```
 
-
+ example ```gaussian([0,1],[1,0.1,0.1,1])``` % the covariance is flatten row by row
