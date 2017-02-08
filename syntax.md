@@ -1,8 +1,8 @@
-**DC Syntax (work in progress)**
+#DC Syntax (work in progress)
 
 Comments as in Prolog: %
 
-***Deterministic clauses***
+##Deterministic clauses
 
 Syntax: `head := body.`
 
@@ -10,14 +10,16 @@ Explaination: body implies head as clauses in prolog, the only difference is the
 
 Example:
 ```
-notempty(Y) := inside(X,Y).
+not_empty(Y) := inside(X,Y). % not_empty(Y) is true if there exists an object X such that inside(X,Y) is true.
 
-inside(1,2) := true. % the body has to be specified to distinguish with prolog syntax
+inside(1,2) := true. % inside(1,2) is a true fact. The body has to be specified to distinguish it with prolog syntax
 ```
 
-***Distributional clauses***
 
-Syntax: head ~ distribution := body.
+
+##Distributional clauses
+
+Syntax: `head ~ distribution := body.`
 
 Explaination: if 'body' is true the random variable head is defined with a given distribution.
 
@@ -31,10 +33,10 @@ coin ~ finite([0.2:true,0.8:false]). % the body is implicitly true.
 coin2 ~ finite([0.4:true,0.6:false]) := coin ~= true. % if coin is true then coin2 is defined with a given distribution.
 ```
 
-***operations***
+##operations
 
-equality operator for random variables
-Syntax: var ~= term
+**equality operator for random variables**
+Syntax: `var ~= term`
 
 Explaination: the value of the random variable 'var' is equal to term (unifiable). A term can be a constant, logical variable or a compund term.
 
@@ -45,7 +47,7 @@ anyvalue := coin ~= A. % 'anyvalue' is true if the random variable coin exists (
 samevalue := coin ~= A, coin2 ~= A. % 'samevalue' is true if the values of coin and coin2 are the same. More formally, 'samevalue' is true iff exists A such that the value of coin and coin2 are both equal to A.
 ```
 
-***Supported distributions***
+###Supported distributions
 
 * Bernoulli/categorical
 
