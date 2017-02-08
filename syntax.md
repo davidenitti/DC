@@ -5,6 +5,7 @@ Comments as in Prolog: %
 ***Deterministic clauses***
 
 Syntax: `head := body.`
+
 Explaination: body implies head as clauses in prolog, the only difference is the implication operator := instead of :-
 
 Example:
@@ -46,17 +47,19 @@ samevalue := coin ~= A, coin2 ~= A. % 'samevalue' is true if the values of coin 
 
 ***Supported distributions***
 
-Bernoulli/categorical
+* Bernoulli/categorical
 
-syntax ```finite([probability1:value1,...,probabilityn:valuen])```
+ syntax ```finite([probability1:value1,...,probabilityn:valuen])```
 
-example ```finite([0.1:black,0.5:red,0.4:blue])```
+ example ```finite([0.1:black,0.5:red,0.4:blue])```
 
-uniform categorical (discrete)
+* uniform categorical (discrete)
 
-syntax ```uniform([value1,value2,...,valuen])```
+ syntax ```uniform([value1,value2,...,valuen])```
 
-example ```uniform([black,red,blue])```
+ example ```uniform([black,red,blue])```
+
+
 
 
 
