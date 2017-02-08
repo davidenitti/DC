@@ -26,17 +26,21 @@ If none of the bodies that define head is true, the random variable head is not 
 Examples:
 ```
 coin ~ finite([0.2:true,0.8:false]). % the body is implicitly true.
-coin2 ~ finite([0.2:true,0.8:false]) := coin ~= true.
+coin2 ~ finite([0.4:true,0.6:false]) := coin ~= true. % if coin is true then coin2 is defined with a given distribution.
 ```
 
 ***operations***
 
-unification for random variables
-Syntax: variable ~= term
+equality operator for random variables
+Syntax: var ~= term
+
+Explaination: the value of the random variable 'var' is equal to term (unifiable). A term can be a constant, logical variable or a compund term.
 
 Examples:
 ```
-coin ~= true
+tcoin := coin ~= true. % 'tcoin' is true if the value of coin is the constant term 'true'
+anyvalue := coin ~= A. % 'anyvalue' is true if the random variable coin exists (whatever is its value). More formally, anyvalue is true iff exists A such that the value of coin is equal to A.
+samevalue := coin ~= A, coin2 ~= A. % 'samevalue' is true if the values of coin and coin2 are the same. More formally, 'samevalue' is true iff exists A such that the value of coin and coin2 are both equal to A.
 ```
 
 ***Supported distributions***
