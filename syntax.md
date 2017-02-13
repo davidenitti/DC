@@ -1,5 +1,22 @@
 #DC Syntax (work in progress)
 
+DC is based on Yap-prolog. This means that the model and inference are written in a Prolog file.
+
+**Initialization**
+The first part of the program regards library inclusion and initialization. For example:
+```
+:- use_module('../distributionalclause.pl'). % load distributional clauses library
+:- use_module('../random/sampling.pl'). % load sampling library
+:- use_module(library(lists)). % load list library (prolog)
+
+:- set_options(default),set_inference(backward(lw)),set_query_propagation(true). % options
+:- initialization(init). % initialize DC
+```
+
+**Options**
+Set default options: ```:- set_options(default).```
+Set default options + likelihood weighting for inference: ```:- set_options(default),set_inference(backward(lw)).```
+
 
 **Built-in Yap-Prolog operators**
 * numerical comparisons between numbers (not random variables): `=`, `<`, `>`, `<=`, `>=`
