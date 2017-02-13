@@ -2,7 +2,7 @@
 
 DC is based on Yap-prolog. This means that the model and inference are written in a Prolog file.
 
-**Initialization**
+###Initialization
 The first part of the program regards library inclusion and initialization. For example:
 ```
 :- use_module('../distributionalclause.pl'). % load distributional clauses library
@@ -13,14 +13,12 @@ The first part of the program regards library inclusion and initialization. For 
 :- initialization(init). % initialize DC
 ```
 
-**Options**
-
+###Options
 Set default options: ```:- set_options(default).```
 
 Set default options + query propagation ```:- set_options(default),set_query_propagation(true).```
 
-**Model**
-
+###Model
 The model is described using distributional clauses. The syntax is explained in the next section.
 
 Example:
@@ -29,8 +27,7 @@ Example:
 coin ~ finite([0.2:true,0.8:false]). % syntax name_variable ~ finite([prob:value,prob:value,...])
 ```
 
-**Inference**
-
+###Inference
 Inference is called with the predicate query
 
 Syntax: ``` query(positive_evidence_List,negative_evidence_List,query_to_consider,num_samples,Probability). ```
