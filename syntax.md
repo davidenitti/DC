@@ -1,6 +1,6 @@
 #Introduction to DC (work in progress)
 
-DC is based on Yap-prolog. This means that the model and inference are written in a Prolog file.
+DC is based on Yap-prolog. This means that model and inference are written in Prolog.
 
 ###Initialization
 The first part of the program regards library inclusion and initialization. For example:
