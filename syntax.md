@@ -12,7 +12,6 @@ The first part of the program regards library inclusion and initialization. For 
 :- set_options(default),set_query_propagation(true). % options
 :- initialization(init). % initialize DC
 ```
-
 ###Options
 Set default options: ```:- set_options(default).```
 
@@ -28,7 +27,7 @@ coin ~ finite([0.2:true,0.8:false]). % syntax name_variable ~ finite([prob:value
 ```
 
 ###Inference
-Inference is called with the predicate query
+Inference is called with the predicate ```query```
 
 Syntax: ``` query(positive_evidence_List,negative_evidence_List,query_to_consider,num_samples,Probability). ```
 
@@ -50,6 +49,9 @@ call yap -l model.pl and write in the prompt:
 ```
 query([],[],coin ~= true,100,P). % 100 samples
 ```
+
+Output ``` P = 0.2```
+
 
 #DC Syntax
 
