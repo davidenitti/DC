@@ -137,7 +137,7 @@ user:belief(A) :- ground(A),!.
 true(P) :- X is random, X<P. %true(P) :- sample(contUniform(0,1),X), X<P.
 
 set_options(default) :-
-	set_inference(backward(classic)),
+	set_inference(backward(lw)),
 	set_lifted(false),
 	set_raoblackwellisation(false),
 	set_debug(false),

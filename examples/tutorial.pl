@@ -4,7 +4,7 @@
 :- use_module('../random/sampling.pl'). % load sampling library
 :- use_module(library(lists)). % load list library (prolog)
 
-:- set_options(default),set_inference(backward(lw)). % to enable query propagation replace the line with :- set_options(default),set_inference(backward(lw)),set_query_propagation(true).
+:- set_options(default). % to enable query propagation replace the line with :- set_options(default),set_query_propagation(true).
 %:- set_debug(true).
 
 
