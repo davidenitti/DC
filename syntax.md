@@ -9,13 +9,14 @@ The first part of the program regards library inclusion and initialization. For 
 :- use_module('../random/sampling.pl'). % load sampling library
 :- use_module(library(lists)). % load list library (prolog)
 
-:- set_options(default),set_inference(backward(lw)),set_query_propagation(true). % options
+:- set_options(default),set_query_propagation(true). % options
 :- initialization(init). % initialize DC
 ```
 
 **Options**
+
 Set default options: ```:- set_options(default).```
-Set default options + likelihood weighting for inference: ```:- set_options(default),set_inference(backward(lw)).```
+Set default options + query propagation ```:- set_options(default),set_query_propagation(true).```
 
 
 **Built-in Yap-Prolog operators**
