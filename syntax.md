@@ -1,4 +1,4 @@
-#DC Syntax (work in progress)
+#Introduction to DC (work in progress)
 
 DC is based on Yap-prolog. This means that the model and inference are written in a Prolog file.
 
@@ -16,7 +16,45 @@ The first part of the program regards library inclusion and initialization. For 
 **Options**
 
 Set default options: ```:- set_options(default).```
+
 Set default options + query propagation ```:- set_options(default),set_query_propagation(true).```
+
+**Model**
+
+The model is described using distributional clauses. The syntax is explained in the next section.
+
+Example:
+```
+% define a discrete random variable (bernoulli)
+coin ~ finite([0.2:true,0.8:false]). % syntax name_variable ~ finite([prob:value,prob:value,...])
+```
+
+**Inference**
+
+Inference is called with the predicate query
+
+Syntax: ``` query(positive_evidence_List,negative_evidence_List,query_to_consider,num_samples,Probability). ```
+
+Example:
+Given the file model.pl
+```
+:- use_module('../distributionalclause.pl'). % load distributional clauses library
+:- use_module('../random/sampling.pl'). % load sampling library
+:- use_module(library(lists)). % load list library (prolog)
+:- set_options(default). % to enable query propagation replace the line with :- set_options(default),set_query_propagation(true).
+
+:- initialization(init). % initialize DC
+
+% define a discrete random variable (bernoulli)
+coin ~ finite([0.2:true,0.8:false]). % syntax name_variable ~ finite([prob:value,prob:value,...])
+```
+
+call yap -l model.pl and write in the prompt:
+```
+query([],[],coin ~= true,100,P). % 100 samples
+```
+
+#DC Syntax
 
 
 **Built-in Yap-Prolog operators**
