@@ -50,7 +50,11 @@ call yap -l model.pl and write in the prompt:
 query([],[],coin ~= true,100,P). % 100 samples
 ```
 
-Output ``` P = 0.2```
+Output
+
+```
+P = 0.2
+```
 
 
 #DC Syntax
