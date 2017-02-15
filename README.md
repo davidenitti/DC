@@ -3,7 +3,6 @@ Probabilistic logic language for inference, planning and learning in static and 
 **DC**: Distributional Clauses for inference in static models. (example and tutorial at [examples/tutorial.pl](https://github.com/davidenitti/DC/blob/master/examples/tutorial.pl))  
 **DCPF**: Distributional Clauses Particle Filter for filtering in dynamic models  
 **HYPE**: planner for hybrid MDPs based on DCPF (the code will be soon available)  
-**HybRel**: planner for hybrid relational MDPs based on DCPF (the code not yet available)   
 
 The code is in beta, if you need help or find a bug please write an [issue](https://github.com/davidenitti/DC/issues)
 or contact me at davide (_DOT_) nitti (AT) cs (_DOT_) kuleuven (_DOT_) be
@@ -20,10 +19,16 @@ sudo make install
 sudo make install_library
 ```
 
-Install GSL library, e.g., for Ubuntu:
+Install GSL library, e.g., for Ubuntu 14.04:
 ```
 sudo apt-get install libgsl0-dev libgsl0ldbl
 ```
+
+For more recent Ubuntu distributions (e.g., 16.04) use this instead:
+```
+sudo apt-get install libgsl2 libgsl2:i386
+```
+
 Install boost library, e.g., for Ubuntu:
 ```
 sudo apt-get install libboost-all-dev
