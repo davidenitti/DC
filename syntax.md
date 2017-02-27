@@ -13,7 +13,7 @@ The first part of the program regards library inclusion and initialization. For 
 :- initialization(init). % initialize DC
 ```
 ###Options
-Set default options: ```:- set_options(default).```
+Set default options (mandatory): ```:- set_options(default).```
 
 Set default options + query propagation ```:- set_options(default),set_query_propagation(true).```
 
@@ -31,6 +31,8 @@ Inference is called with the predicate ```query```
 
 Syntax: ``` query(positive_evidence_List,negative_evidence_List,query_to_consider,num_samples,Probability). ```
 
+```eval_query```: same as query
+ 
 Example:
 Given the file model.pl
 ```
@@ -61,17 +63,28 @@ P = 0.2
 
 
 **Built-in Yap-Prolog operators**
-* numerical comparisons between numbers (not random variables): `=`, `<`, `>`, `<=`, `>=`
-* equality operator (unification): `=`
-* equality operator with expression evaluation: `is`
+
+The following operators/predicates can be used in DC clauses:
+
+* `=`, `<`, `>`, `<=`, `>=` : numerical comparisons between numbers (not random variables)
+* `=` : equality operator (unification)
+* `is` : equality operator with expression evaluation
 
  For example, `10 is 2*5` is true, `A is 2*5` is true for `A=10` (the logical variable A is unified with 10 if possible)
  
-* integer number comparison: `between(A,B,C)` C is between A and B and C is integer.
+* `between(A,B,C)` : integer number comparison  C is between A and B and C is integer.
 
  For example, the formula `between(1,5,C)` is true for C=1, 2, 3, 4, 5.
-* single-line comments: `%`
+* `%` : single-line comments
 
+**Custom built-in operators/predicates**
+
+`builtin(A)` : set predicate A as built-in. The predicates that unifies with A can be then used inside DC clauses.
+  For example, 
+  ```
+  builtin(pos(X)). % any predicate that unifies with pos(X) can be used inside DC clauses
+  pos(A) :- A>0. % prolog clause
+  ```
 
 ##Deterministic clauses
 
